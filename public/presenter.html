@@ -1,0 +1,106 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>شاشة المقدم — لعبة الخلية</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="presenter">
+  <div id="flash" class="flash" hidden></div>
+
+  <header class="p-header">
+    <div class="header-teams" id="header-teams">
+      <span class="muted">لا توجد مباراة نشطة</span>
+    </div>
+    <h1 class="app-title">لعبة الخلية — بزّر</h1>
+    <button id="end-match-btn" class="btn btn-ghost btn-small" hidden>إنهاء المباراة</button>
+    <button id="settings-btn" class="gear" aria-label="الإعدادات">⚙</button>
+  </header>
+
+  <main id="p-main" class="p-main">
+
+    <!-- View: match picker (roster + pick A/B) -->
+    <section id="match-view" class="match-view" hidden>
+      <h2>اختر الفريقين للمباراة القادمة</h2>
+      <p class="muted center">اضغط على فريقين من القائمة (١ ضد ١).</p>
+
+      <div class="roster-grid" id="roster-grid"></div>
+
+      <div class="match-actions">
+        <button id="start-match-btn" class="btn btn-primary btn-large" disabled>بدء المباراة</button>
+        <button id="clear-picks-btn" class="btn btn-ghost">إلغاء التحديد</button>
+      </div>
+
+      <div class="qr-wrap">
+        <p class="muted">رابط الفرق فقط — امسحه من جوّالاتهم:</p>
+        <img id="qr" src="/qr" alt="QR" class="qr-img" />
+        <p class="muted" id="lan-url">—</p>
+        <p class="muted small-hint">🔒 لا تعرض رابط شاشتك (المنتهي بـ <code>/host</code>) للاعبين.</p>
+      </div>
+    </section>
+
+    <!-- View: difficulty picker (match started, no question) -->
+    <section id="picker-view" class="picker-view" hidden>
+      <h2 id="picker-heading">اختر مستوى الصعوبة</h2>
+      <p class="picker-hint" id="picker-hint" hidden>بانتظار انضمام الفريقين للمباراة</p>
+      <div class="difficulty-grid">
+        <button class="diff-btn easy" data-diff="سهل" disabled>
+          <span class="diff-emoji">🟢</span>
+          <span class="diff-label">سهل</span>
+          <span class="diff-count" id="count-easy"></span>
+        </button>
+        <button class="diff-btn medium" data-diff="متوسط" disabled>
+          <span class="diff-emoji">🟡</span>
+          <span class="diff-label">متوسط</span>
+          <span class="diff-count" id="count-medium"></span>
+        </button>
+        <button class="diff-btn hard" data-diff="صعب" disabled>
+          <span class="diff-emoji">🔴</span>
+          <span class="diff-label">صعب</span>
+          <span class="diff-count" id="count-hard"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- View: question + timer + phase-2 buttons -->
+    <section id="question-view" class="question-view" hidden>
+      <div class="q-meta">
+        <span>الفئة: <b id="q-category">—</b></span>
+        <span>الصعوبة: <b id="q-difficulty">—</b></span>
+      </div>
+      <div id="q-text" class="q-text"></div>
+      <div id="q-options" class="q-options"></div>
+      <div id="q-riddle" class="q-riddle" hidden>
+        <div class="riddle-answer" id="riddle-answer"></div>
+        <div class="riddle-accepted muted" id="riddle-accepted"></div>
+      </div>
+
+      <div class="timer-area">
+        <div id="timer" class="timer" hidden>00:00</div>
+      </div>
+
+      <div class="action-row" id="answer-options"></div>
+      <div class="action-row">
+        <button id="next-btn" class="btn btn-next">السؤال التالي</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div id="settings-modal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>الإعدادات</h3>
+      <button id="reset-btn" class="btn btn-danger btn-large">جلسة جديدة</button>
+      <p class="muted">يمسح الفرق والأسئلة المستخدمة ويرجع لصفحة الإعداد.</p>
+      <button id="close-settings" class="btn btn-ghost">إغلاق</button>
+    </div>
+  </div>
+
+  <audio id="timer-sound" src="/audio/timer-end.mp3" preload="auto" playsinline></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/presenter.js"></script>
+</body>
+</html>

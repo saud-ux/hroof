@@ -1,0 +1,31 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>إعداد الفرق — لعبة الخلية</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="setup">
+  <main class="setup-card wide">
+    <h1>لعبة الخلية — بزّر</h1>
+    <p class="muted">أدخل فرق الفعالية (٢–٨). في كل جولة تختار فريقين لمواجهة ١ ضد ١.</p>
+
+    <form id="setup-form" class="setup-form">
+      <div id="teams-list" class="teams-list"></div>
+
+      <div class="setup-actions">
+        <button type="button" id="add-team" class="btn btn-ghost">+ إضافة فريق</button>
+        <span class="muted" id="team-count">0 / 8</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-large">حفظ الفرق وبدء الفعالية</button>
+    </form>
+  </main>
+
+  <audio id="silent-unlock" src="/audio/timer-end.mp3" preload="auto" playsinline></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/setup.js"></script>
+</body>
+</html>

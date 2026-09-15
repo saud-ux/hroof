@@ -1,0 +1,33 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>الفريق — لعبة الخلية</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="team">
+  <section id="select-view" class="team-select">
+    <h1 class="app-title small">لعبة الخلية — بزّر</h1>
+    <p class="muted center" id="select-heading">اختر فريقك</p>
+    <div class="team-cards" id="team-cards"></div>
+    <p class="muted center empty-note" id="empty-note" hidden>لم يبدأ المقدم الفعالية بعد.</p>
+  </section>
+
+  <section id="buzzer-view" class="buzzer-view" hidden>
+    <header class="team-banner" id="team-banner">
+      <span id="banner-name">—</span>
+    </header>
+    <main class="buzzer-main">
+      <button id="buzzer" class="buzzer" aria-label="زر البز">
+        <span id="buzzer-label">بانتظار السؤال</span>
+      </button>
+    </main>
+  </section>
+
+  <audio id="timer-sound" src="/audio/timer-end.mp3" preload="auto" playsinline></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/team.js"></script>
+</body>
+</html>
