@@ -1,0 +1,106 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>الأسئلة — لعبة الخلية</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .qb-wrap { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+    .qb-header { display: flex; flex-wrap: wrap; gap: .75rem; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
+    .qb-header h1 { font-size: 1.6rem; }
+    .qb-stats { color: var(--text-muted); font-size: .95rem; }
+    .qb-controls { display: grid; grid-template-columns: 1fr; gap: .6rem; margin-bottom: 1rem; }
+    @media (min-width: 720px) { .qb-controls { grid-template-columns: 1fr auto auto; } }
+    .qb-input, .qb-select {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: .7rem .9rem; font-size: 1rem; font-family: inherit;
+      width: 100%;
+    }
+    .qb-input:focus, .qb-select:focus { outline: 2px solid #3b82f6; outline-offset: 1px; }
+    .qb-list { display: grid; gap: .75rem; }
+    .qb-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.1rem;
+    }
+    .qb-card__top { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .5rem; }
+    .qb-badge {
+      display: inline-flex; align-items: center;
+      font-size: .8rem; font-weight: 700;
+      padding: .18rem .55rem; border-radius: 999px;
+      background: var(--surface-2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .qb-badge.easy   { background: rgba(34,197,94,.12);  color: var(--difficulty-easy);   border-color: rgba(34,197,94,.35); }
+    .qb-badge.medium { background: rgba(245,158,11,.12); color: var(--difficulty-medium); border-color: rgba(245,158,11,.35); }
+    .qb-badge.hard   { background: rgba(239,68,68,.12);  color: var(--difficulty-hard);   border-color: rgba(239,68,68,.35); }
+    .qb-id { color: var(--text-muted); font-size: .8rem; margin-inline-start: auto; font-family: ui-monospace, Menlo, monospace; }
+    .qb-text { font-size: 1.15rem; font-weight: 700; line-height: 1.5; margin: .25rem 0 .6rem; }
+    .qb-hint { color: var(--text-muted); font-size: .95rem; margin-bottom: .55rem; }
+    .qb-options { display: grid; gap: .35rem; margin: .35rem 0 .1rem; padding: 0; list-style: none; }
+    .qb-options li {
+      padding: .5rem .75rem; border-radius: 8px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      font-size: .98rem;
+    }
+    .qb-options li.correct {
+      background: rgba(34,197,94,.14);
+      border-color: rgba(34,197,94,.5);
+      color: #d1fae5;
+      font-weight: 700;
+    }
+    .qb-options li .qb-mark { color: var(--difficulty-easy); margin-inline-start: .35rem; font-weight: 700; }
+    .qb-answer { margin-top: .5rem; font-size: .95rem; color: var(--text-muted); }
+    .qb-answer b { color: var(--text); }
+    .qb-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    details.qb-card summary { list-style: none; cursor: pointer; }
+    details.qb-card summary::-webkit-details-marker { display: none; }
+    details.qb-card[open] .qb-toggle::after { content: 'إخفاء الإجابة'; }
+    .qb-toggle {
+      display: inline-block; margin-top: .25rem;
+      background: transparent; border: 1px dashed var(--border);
+      color: var(--text-muted); padding: .35rem .7rem; border-radius: 8px;
+      font-size: .85rem; cursor: pointer;
+    }
+    .qb-toggle::after { content: 'إظهار الإجابة'; }
+    .qb-footer { display: flex; justify-content: center; margin-top: 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="qb-wrap">
+    <header class="qb-header">
+      <div>
+        <h1>الأسئلة</h1>
+        <div class="qb-stats" id="qb-stats">جاري التحميل…</div>
+      </div>
+      <label class="qb-toggle" style="cursor:pointer;">
+        <input type="checkbox" id="qb-reveal" style="vertical-align:middle;" />
+        إظهار جميع الإجابات
+      </label>
+    </header>
+
+    <div class="qb-controls">
+      <input id="qb-search" class="qb-input" type="search" placeholder="ابحث في نص السؤال أو الإجابة أو التصنيف…" autocomplete="off" />
+      <select id="qb-difficulty" class="qb-select" aria-label="الصعوبة">
+        <option value="">كل المستويات</option>
+        <option value="سهل">سهل</option>
+        <option value="متوسط">متوسط</option>
+        <option value="صعب">صعب</option>
+      </select>
+      <select id="qb-category" class="qb-select" aria-label="التصنيف">
+        <option value="">كل التصنيفات</option>
+      </select>
+    </div>
+
+    <div id="qb-list" class="qb-list"></div>
+    <div id="qb-empty" class="qb-empty" hidden>ما فيه أسئلة تطابق البحث.</div>
+
+    <div class="qb-footer">
+      <a href="/" class="btn btn-ghost">العودة للرئيسية</a>
+    </div>
+  </div>
+
+  <script src="/js/questions.js"></script>
+</body>
+</html>

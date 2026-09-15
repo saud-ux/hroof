@@ -217,6 +217,19 @@ app.get('/team', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'tea
 app.get(['/host', '/mo', '/mqdm'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'setup.html')));
 app.get('/setup', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'setup.html')));
 app.get('/presenter', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'presenter.html')));
+app.get('/questions', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'questions.html')));
+
+app.get('/api/questions', (_req, res) => {
+  res.json({
+    total: questions.length,
+    counts: {
+      'سهل': byDifficulty['سهل'].length,
+      'متوسط': byDifficulty['متوسط'].length,
+      'صعب': byDifficulty['صعب'].length,
+    },
+    questions,
+  });
+});
 
 app.get('/lan-ip', (_req, res) => res.json({ ip: getLanIp(), port: PORT }));
 app.get('/qr', async (_req, res) => {
