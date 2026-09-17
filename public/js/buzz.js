@@ -23,6 +23,7 @@
   const micMeter = document.getElementById('mic-meter');
   const micLevel = document.getElementById('mic-level');
   const timerDisplay = document.getElementById('timer-display');
+  const miniScores = document.getElementById('mini-scores');
 
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -34,6 +35,28 @@
   let pickedColor = null;    // free-for-all mode only
 
   const STORE_TEAM = 'solo-buzz-team';
+
+  // A compact live standing so a player can follow the match without the
+  // presenter reading the score out after every round.
+  function renderMiniScores() {
+    const rows = last.scores || [];
+    const scored = rows.filter(r => r.points !== 0);
+    // Nothing to show before anyone is on the board, or in a free-for-all with
+    // too many names to fit across a phone.
+    const show = scored.length > 0 && rows.length <= 6;
+    miniScores.hidden = !show;
+    if (!show) return;
+
+    const mineKey = myScoreKey();
+    miniScores.innerHTML = '';
+    rows.forEach(r => {
+      const chip = document.createElement('span');
+      chip.className = 'score-chip' + (r.key === mineKey ? ' me' : '');
+      chip.style.setProperty('--tint', r.color || '#6b7280');
+      chip.innerHTML = `<b>${toArabic(r.points)}</b><span>${r.name}</span>`;
+      miniScores.appendChild(chip);
+    });
+  }
 
   function myScoreKey() {
     if (!me.id) return null;
@@ -186,6 +209,7 @@
       buzzerLabel.textContent = 'بانتظار الهوست';
     }
 
+    renderMiniScores();
     const mine = (last.scores || []).find(r => r.key === myScoreKey());
     const scorePart = mine ? ` — نقاطك ${toArabic(mine.points)}` : '';
     playersLine.textContent =

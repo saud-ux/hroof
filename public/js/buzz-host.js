@@ -22,6 +22,8 @@
   const timerDisplay = document.getElementById('timer-display');
   const playersList = document.getElementById('players-list');
   const playersCount = document.getElementById('players-count');
+  const playersPill = document.getElementById('players-pill');
+  const playersEmpty = document.getElementById('players-empty');
   const qpick = document.getElementById('qpick');
   const letterStrip = document.getElementById('letter-strip');
   const diffRow = document.getElementById('diff-row');
@@ -394,10 +396,12 @@
       winnerName.textContent = winner.teamName ? `${winner.name} — ${winner.teamName}` : winner.name;
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
       winnerBox.style.background = winner.color || '';
+      winnerBox.style.borderColor = 'transparent';
     } else {
-      winnerName.textContent = snap.armed ? 'الزر مفتوح…' : 'مقفل';
+      winnerName.textContent = snap.armed ? 'الزر مفتوح — بانتظار أول ضغطة' : 'الزر مقفل';
       winnerMs.textContent = '';
       winnerBox.style.background = '';
+      winnerBox.style.borderColor = '';
     }
 
     armBtn.hidden = !!winner || snap.armed;
@@ -434,6 +438,8 @@
     const snap = lastSnap;
     if (!snap) return;
     playersCount.textContent = toArabic(snap.players.length);
+    if (playersPill) playersPill.textContent = `${toArabic(snap.players.length)} مشارك`;
+    if (playersEmpty) playersEmpty.hidden = snap.players.length > 0;
     playersList.innerHTML = '';
     snap.players.forEach(p => {
       const li = document.createElement('li');

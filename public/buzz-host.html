@@ -5,26 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>الزر — شاشة المقدم</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/host.css" />
 </head>
 <body class="presenter solo-host">
   <header class="topbar">
-    <h1 class="app-title small">الزر — شاشة المقدم</h1>
-    <span class="muted" id="round-label">جولة ١</span>
+    <h1 class="app-title small">الزر <span class="topbar-tag">شاشة المقدم</span></h1>
+    <div class="topbar-right">
+      <span class="pill" id="round-label">جولة ١</span>
+      <span class="pill" id="players-pill">٠ مشارك</span>
+    </div>
   </header>
 
   <main class="solo-host-main">
-    <section class="solo-share">
-      <p class="muted">رابط المشاركين</p>
+    <section class="solo-share card">
+      <p class="card-label">رابط المشاركين</p>
       <div class="solo-link-row">
         <code id="share-link">…</code>
         <button id="copy-link" class="btn btn-ghost btn-small">نسخ</button>
       </div>
-      <img id="share-qr" class="solo-qr" alt="QR" src="/qr?path=/buzz" />
+      <details class="qr-fold" open>
+        <summary>رمز QR</summary>
+        <img id="share-qr" class="solo-qr" alt="QR" src="/qr?path=/buzz" />
+      </details>
     </section>
 
     <section class="solo-stage">
-      <div class="solo-qpick" id="qpick">
-        <p class="muted letter-caption">الحرف الذي تبدأ به الإجابة</p>
+      <div class="card solo-qpick" id="qpick">
+        <p class="card-label">اختر سؤالًا</p>
+        <p class="letter-caption">الحرف الذي تبدأ به الإجابة</p>
         <div class="letter-strip" id="letter-strip">
           <button class="letter-btn active" data-letter="">أي حرف</button>
         </div>
@@ -35,7 +43,7 @@
         </div>
       </div>
 
-      <div class="solo-question" id="question-box" hidden>
+      <div class="card solo-question" id="question-box" hidden>
         <div class="solo-q-meta">
           <span>الفئة: <b id="q-category">—</b></span>
           <span>الصعوبة: <b id="q-difficulty">—</b></span>
@@ -45,40 +53,46 @@
         <p class="solo-q-hint muted" id="q-hint"></p>
       </div>
 
-      <div class="timer-row">
-        <button class="btn timer-btn" data-seconds="5">⏱ ٥ ثوانٍ</button>
-        <button class="btn timer-btn" data-seconds="10">⏱ ١٠ ثوانٍ</button>
-        <button id="stop-timer" class="btn btn-ghost btn-small" hidden>إيقاف</button>
-        <span id="timer-display" class="timer-display" hidden>—</span>
-      </div>
-
-      <div id="winner-box" class="solo-winner-box idle">
-        <span id="winner-name">لم يبدأ الضغط</span>
-        <span id="winner-ms" class="solo-ms"></span>
-      </div>
-
-      <div class="solo-controls">
-        <button id="award-btn" class="btn btn-award" hidden>✓ نقطة للفائز</button>
-        <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر</button>
-        <button id="next-btn" class="btn btn-next" hidden>جولة جديدة</button>
-        <button id="disarm-btn" class="btn btn-ghost">قفل</button>
-        <button id="clear-q-btn" class="btn btn-ghost btn-small" hidden>إخفاء السؤال</button>
-        <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
-      </div>
-
-      <ol id="press-order" class="solo-order"></ol>
-
-      <div class="scoreboard" id="scoreboard" hidden>
-        <div class="scoreboard-head">
-          <span class="muted">النقاط</span>
-          <button id="reset-scores" class="btn btn-ghost btn-small" type="button">تصفير النقاط</button>
+      <div class="card stage-card">
+        <div id="winner-box" class="solo-winner-box idle">
+          <span id="winner-name">لم يبدأ الضغط</span>
+          <span id="winner-ms" class="solo-ms"></span>
         </div>
-        <ul id="score-list" class="score-list"></ul>
+
+        <div class="timer-row">
+          <button class="btn timer-btn" data-seconds="5">⏱ ٥ ثوانٍ</button>
+          <button class="btn timer-btn" data-seconds="10">⏱ ١٠ ثوانٍ</button>
+          <button id="stop-timer" class="btn btn-ghost btn-small" hidden>إيقاف</button>
+          <span id="timer-display" class="timer-display" hidden>—</span>
+        </div>
+
+        <div class="solo-controls primary-row">
+          <button id="award-btn" class="btn btn-award" hidden>✓ نقطة للفائز</button>
+          <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر</button>
+          <button id="next-btn" class="btn btn-next" hidden>جولة جديدة</button>
+        </div>
+        <div class="solo-controls minor-row">
+          <button id="disarm-btn" class="btn btn-ghost btn-small">قفل</button>
+          <button id="clear-q-btn" class="btn btn-ghost btn-small" hidden>إخفاء السؤال</button>
+          <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
+        </div>
+
+        <ol id="press-order" class="solo-order"></ol>
       </div>
+
     </section>
 
     <section class="solo-players">
-      <div class="voice-panel">
+      <div class="card scoreboard" id="scoreboard" hidden>
+        <div class="scoreboard-head">
+          <span class="card-label">النقاط</span>
+          <button id="reset-scores" class="btn btn-ghost btn-small" type="button">تصفير</button>
+        </div>
+        <ul id="score-list" class="score-list"></ul>
+      </div>
+
+      <div class="voice-panel card">
+        <p class="card-label">الصوت</p>
         <button id="voice-btn" class="btn btn-ghost btn-small">🎙 تشغيل الصوت</button>
         <span id="voice-status" class="voice-status muted"></span>
         <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>
@@ -93,9 +107,9 @@
         </label>
       </div>
 
-      <div class="teams-setup">
+      <div class="teams-setup card">
         <div class="teams-head">
-          <span class="muted">الفرق</span>
+          <span class="card-label">الفرق</span>
           <label class="teams-toggle">
             <input type="checkbox" id="teams-enabled" /> فريق ضد فريق
           </label>
@@ -110,8 +124,11 @@
         </div>
       </div>
 
-      <p class="muted">المشاركون (<span id="players-count">0</span>)</p>
-      <ul id="players-list" class="solo-player-list"></ul>
+      <div class="card players-card">
+        <p class="card-label">المشاركون (<span id="players-count">٠</span>)</p>
+        <ul id="players-list" class="solo-player-list"></ul>
+        <p class="empty-hint" id="players-empty">لم ينضم أحد بعد — وزّع الرابط</p>
+      </div>
     </section>
   </main>
 
