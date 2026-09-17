@@ -31,6 +31,13 @@
   const voiceMode = document.getElementById('voice-mode');
   const voiceAllBtn = document.getElementById('voice-all-btn');
 
+  const teamsEnabled = document.getElementById('teams-enabled');
+  const teamsEditor = document.getElementById('teams-editor');
+  const teamsRows = document.getElementById('teams-rows');
+  const addTeamBtn = document.getElementById('add-team');
+  const saveTeamsBtn = document.getElementById('save-teams');
+  const teamsError = document.getElementById('teams-error');
+
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
 
@@ -53,6 +60,97 @@
   shareQr.addEventListener('error', () => { shareQr.hidden = true; });
 
   socket.on('connect', () => socket.emit('solo:hostRegister'));
+
+  // ---- Teams ----
+  let palette = [];
+  let draftTeams = [];
+  // While the host is typing we must not overwrite their rows; the rest of the
+  // time the editor mirrors the server so a cleared room or a second tab never
+  // leaves stale teams behind.
+  let editingTeams = false;
+
+  function renderTeamRows() {
+    teamsRows.innerHTML = '';
+    (draftTeams || []).forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'team-row';
+
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'color-swatch';
+      swatch.style.background = t.color;
+      swatch.title = 'غيّر اللون';
+      swatch.addEventListener('click', () => {
+        const idx = palette.indexOf(t.color);
+        t.color = palette[(idx + 1) % palette.length];
+        editingTeams = true;
+        renderTeamRows();
+      });
+
+      const input = document.createElement('input');
+      input.className = 'solo-input team-name-input';
+      input.type = 'text';
+      input.maxLength = 24;
+      input.value = t.name;
+      input.placeholder = `الفريق ${i + 1}`;
+      input.addEventListener('input', () => { t.name = input.value; editingTeams = true; });
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'solo-kick';
+      del.textContent = '×';
+      del.title = 'حذف';
+      del.addEventListener('click', () => {
+        draftTeams.splice(i, 1);
+        editingTeams = true;
+        renderTeamRows();
+      });
+
+      row.append(swatch, input, del);
+      teamsRows.appendChild(row);
+    });
+  }
+
+  teamsEnabled.addEventListener('change', () => {
+    if (teamsEnabled.checked) {
+      editingTeams = true;
+      teamsEditor.hidden = false;
+      if (!draftTeams.length) {
+        draftTeams = [
+          { name: 'الفريق الأول', color: palette[0] || '#22c55e' },
+          { name: 'الفريق الثاني', color: palette[1] || '#3b82f6' },
+        ];
+      }
+      renderTeamRows();
+    } else {
+      editingTeams = false;
+      teamsEditor.hidden = true;
+      draftTeams = [];
+      socket.emit('solo:setTeams', { teams: [] }); // back to free-for-all
+    }
+  });
+
+  addTeamBtn.addEventListener('click', () => {
+    if (draftTeams.length >= 8) return;
+    editingTeams = true;
+    draftTeams.push({
+      name: `الفريق ${draftTeams.length + 1}`,
+      color: palette[draftTeams.length % palette.length] || '#22c55e',
+    });
+    renderTeamRows();
+  });
+
+  saveTeamsBtn.addEventListener('click', () => {
+    teamsError.hidden = true;
+    socket.emit('solo:setTeams', { teams: draftTeams });
+    editingTeams = false; // the next state is authoritative again
+  });
+
+  socket.on('solo:teamsRejected', ({ reason }) => {
+    teamsError.textContent = reason || 'تعذّر حفظ الفرق';
+    teamsError.hidden = false;
+    editingTeams = true; // the rows were not accepted, so keep what the host typed
+  });
 
   // ---- Voice ----
   let voiceRoom = { members: [], speakers: [], mode: 'winner' };
@@ -191,11 +289,13 @@
     winnerBox.classList.toggle('idle', !winner);
     winnerBox.classList.toggle('hit', !!winner);
     if (winner) {
-      winnerName.textContent = winner.name;
+      winnerName.textContent = winner.teamName ? `${winner.name} — ${winner.teamName}` : winner.name;
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
+      winnerBox.style.background = winner.color || '';
     } else {
       winnerName.textContent = snap.armed ? 'البزّ مفتوح…' : 'مقفل';
       winnerMs.textContent = '';
+      winnerBox.style.background = '';
     }
 
     armBtn.hidden = !!winner || snap.armed;
@@ -206,11 +306,21 @@
     snap.presses.forEach((p, i) => {
       const li = document.createElement('li');
       li.className = i === 0 ? 'first' : '';
-      li.innerHTML = `<span>${p.name}</span><span class="solo-ms">${toArabic(p.ms)} م.ث</span>`;
+      const who = p.teamName ? `${p.name} <span class="press-team">${p.teamName}</span>` : p.name;
+      li.innerHTML = `<span>${who}</span><span class="solo-ms">${toArabic(p.ms)} م.ث</span>`;
+      if (p.color) li.style.borderInlineStart = `4px solid ${p.color}`;
       pressOrder.appendChild(li);
     });
 
     lastSnap = snap;
+    if (Array.isArray(snap.palette) && snap.palette.length) palette = snap.palette;
+    if (Array.isArray(snap.teams) && !editingTeams) {
+      const on = snap.teams.length > 0;
+      teamsEnabled.checked = on;
+      teamsEditor.hidden = !on;
+      draftTeams = snap.teams.map(t => ({ name: t.name, color: t.color }));
+      renderTeamRows();
+    }
     renderPlayers();
   });
 
@@ -222,7 +332,8 @@
     snap.players.forEach(p => {
       const li = document.createElement('li');
       const pressed = snap.presses.some(x => x.id === p.id);
-      li.innerHTML = `<span>${p.name}</span>`;
+      const label = p.teamName ? `${p.name} <span class="press-team">${p.teamName}</span>` : p.name;
+      li.innerHTML = `<span class="player-dot" style="background:${p.color || 'transparent'}"></span><span>${label}</span>`;
       if (pressed) li.classList.add('pressed');
       const inVoice = voiceRoom.members.some(m => m.id === p.id);
       if (inVoice) {

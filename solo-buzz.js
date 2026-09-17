@@ -7,7 +7,16 @@ const { ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom } = require('./
 
 const MAX_PLAYERS = 200;
 const MAX_NAME = 24;
+const MIN_TEAMS = 2;
+const MAX_TEAMS = 8;
 const DIFFICULTIES = ['سهل', 'متوسط', 'صعب'];
+
+// Each participant picks a colour; their buzzer takes it, the way a team's
+// colour works in the Cell game.
+const PALETTE = [
+  '#22c55e', '#3b82f6', '#f97316', '#a855f7',
+  '#eab308', '#ec4899', '#14b8a6', '#ef4444',
+];
 
 function createRoom() {
   return {
@@ -18,6 +27,8 @@ function createRoom() {
     presses: [],      // [{ id, name, ms }] ordered by arrival; presses[0] is the winner
     question: null,   // the question on screen, host-only
     usedIds: new Set(),
+    teams: [],        // [{ id, name, color }] — empty means free-for-all
+
     voice: {
       members: new Set(),   // socket ids with an open mic connection
       granted: new Set(),   // ids the host explicitly un-muted
@@ -34,6 +45,12 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
 
   const findPlayer = (id) => room.players.find(p => p.id === id);
   const winner = () => room.presses[0] || null;
+
+  function teamNameOf(player) {
+    if (!player || player.teamId == null) return null;
+    const t = room.teams.find(x => x.id === player.teamId);
+    return t ? t.name : null;
+  }
 
   // Who is allowed to transmit right now. Hosts always may; the rest depends on
   // the mode and on whoever won the current round.
@@ -80,8 +97,14 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     const base = {
       round: room.round,
       armed: room.armed,
-      players: room.players.map(p => ({ id: p.id, name: p.name })),
-      presses: room.presses.map(p => ({ id: p.id, name: p.name, ms: p.ms })),
+      teams: room.teams,
+      players: room.players.map(p => ({
+        id: p.id, name: p.name, color: p.color, teamId: p.teamId ?? null, teamName: teamNameOf(p),
+      })),
+      presses: room.presses.map(p => ({
+        id: p.id, name: p.name, ms: p.ms, color: p.color, teamId: p.teamId ?? null, teamName: p.teamName || null,
+      })),
+      palette: PALETTE,
       winner: winner(),
       // players only learn THAT a question is up, never what it says
       hasQuestion: !!room.question,
@@ -137,19 +160,42 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     socket.emit('solo:state', snapshot(false));
 
     // ---- Player ------------------------------------------------------------
-    socket.on('solo:join', ({ name } = {}) => {
+    socket.on('solo:join', ({ name, color, teamId } = {}) => {
       const clean = cleanName(name);
       if (!clean) { socket.emit('solo:joinRejected', { reason: 'اكتب اسمك أولاً' }); return; }
       if (room.players.length >= MAX_PLAYERS && !findPlayer(socket.id)) {
         socket.emit('solo:joinRejected', { reason: 'العدد اكتمل' });
         return;
       }
+      // In team mode a player belongs to a team and wears its colour; otherwise
+      // they pick their own.
+      let team = null;
+      if (room.teams.length) {
+        team = room.teams.find(t => t.id === teamId);
+        if (!team) { socket.emit('solo:joinRejected', { reason: 'اختر فريقك أولاً' }); return; }
+      }
+
       const finalName = uniqueName(clean, socket.id);
+      const finalColor = team
+        ? team.color
+        : (PALETTE.includes(color) ? color : PALETTE[room.players.length % PALETTE.length]);
+
       const existing = findPlayer(socket.id);
-      if (existing) existing.name = finalName;
-      else room.players.push({ id: socket.id, name: finalName });
+      if (existing) {
+        existing.name = finalName;
+        existing.color = finalColor;
+        existing.teamId = team ? team.id : null;
+      } else {
+        room.players.push({ id: socket.id, name: finalName, color: finalColor, teamId: team ? team.id : null });
+      }
       socket.data.soloPlayer = true;
-      socket.emit('solo:joined', { id: socket.id, name: finalName });
+      socket.emit('solo:joined', {
+        id: socket.id,
+        name: finalName,
+        color: finalColor,
+        teamId: team ? team.id : null,
+        teamName: team ? team.name : null,
+      });
       broadcast();
     });
 
@@ -166,6 +212,9 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.presses.push({
         id: player.id,
         name: player.name,
+        color: player.color,
+        teamId: player.teamId ?? null,
+        teamName: teamNameOf(player),
         ms: Math.max(0, Date.now() - room.armedAt),
       });
       broadcast();
@@ -236,6 +285,46 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       if (room.voice.mode === 'winner') broadcastVoice();
     });
 
+    // Switch the room into team mode. Players whose team disappears are sent
+    // back to the picker rather than left in a team that no longer exists.
+    socket.on('solo:setTeams', ({ teams } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (!Array.isArray(teams)) return;
+
+      const clean = teams
+        .filter(t => t && typeof t.name === 'string' && t.name.trim())
+        .slice(0, MAX_TEAMS)
+        .map((t, i) => ({
+          id: i + 1,
+          name: t.name.trim().slice(0, MAX_NAME),
+          color: PALETTE.includes(t.color) ? t.color : PALETTE[i % PALETTE.length],
+        }));
+      if (clean.length && clean.length < MIN_TEAMS) {
+        socket.emit('solo:teamsRejected', { reason: `تحتاج ${MIN_TEAMS} فرق على الأقل` });
+        return;
+      }
+
+      room.teams = clean;
+      const validIds = new Set(clean.map(t => t.id));
+      const dropped = [];
+      for (const p of room.players) {
+        if (clean.length && !validIds.has(p.teamId)) dropped.push(p.id);
+        else if (clean.length) {
+          const t = clean.find(x => x.id === p.teamId);
+          if (t) p.color = t.color;
+        }
+      }
+      if (dropped.length) {
+        room.players = room.players.filter(p => !dropped.includes(p.id));
+        room.presses = room.presses.filter(p => !dropped.includes(p.id));
+        for (const id of dropped) {
+          const s = nsp.sockets.get(id);
+          if (s) s.emit('solo:teamsChanged', {});
+        }
+      }
+      broadcast();
+    });
+
     socket.on('solo:kick', ({ id } = {}) => {
       if (!socket.data.soloHost) return;
       room.players = room.players.filter(p => p.id !== id);
@@ -253,6 +342,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.round = 1;
       room.question = null;
       room.usedIds = new Set();
+      room.teams = [];
       nsp.emit('solo:cleared', {});
       broadcast();
     });

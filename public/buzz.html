@@ -7,13 +7,29 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="team solo">
-  <!-- 1) Name entry -->
-  <section id="name-view" class="solo-name">
+  <!-- 1) Team picker (team mode only) -->
+  <section id="team-view" class="solo-name" hidden>
     <h1 class="app-title small">بزّر</h1>
-    <p class="muted center">اكتب اسمك وادخل</p>
+    <p class="muted center">اختر فريقك</p>
+    <div class="team-cards" id="team-cards"></div>
+  </section>
+
+  <!-- 2) Name entry -->
+  <section id="name-view" class="solo-name" hidden>
+    <h1 class="app-title small">بزّر</h1>
+    <p class="muted center" id="name-heading">اكتب اسمك وادخل</p>
+    <p class="center solo-chosen-team" id="chosen-team" hidden></p>
+
     <form id="name-form" class="solo-form" autocomplete="off">
       <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required />
+
+      <div class="solo-colors" id="color-row" hidden>
+        <span class="muted">اختر لونك</span>
+        <div class="color-swatches" id="color-swatches"></div>
+      </div>
+
       <button class="btn btn-primary btn-large" type="submit">دخول</button>
+      <button class="btn btn-ghost btn-small" type="button" id="back-teams" hidden>رجوع لاختيار الفريق</button>
     </form>
     <p class="solo-error" id="name-error" hidden></p>
     <p class="muted center solo-count" id="lobby-count"></p>

@@ -76,6 +76,23 @@
         </label>
       </div>
 
+      <div class="teams-setup">
+        <div class="teams-head">
+          <span class="muted">الفرق</span>
+          <label class="teams-toggle">
+            <input type="checkbox" id="teams-enabled" /> فريق ضد فريق
+          </label>
+        </div>
+        <div id="teams-editor" hidden>
+          <div id="teams-rows" class="teams-rows"></div>
+          <div class="teams-actions">
+            <button id="add-team" class="btn btn-ghost btn-small" type="button">+ فريق</button>
+            <button id="save-teams" class="btn btn-primary btn-small" type="button">حفظ الفرق</button>
+          </div>
+          <p class="solo-error" id="teams-error" hidden></p>
+        </div>
+      </div>
+
       <p class="muted">المشاركون (<span id="players-count">0</span>)</p>
       <ul id="players-list" class="solo-player-list"></ul>
     </section>
