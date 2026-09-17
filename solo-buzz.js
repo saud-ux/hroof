@@ -28,6 +28,9 @@ function createRoom() {
     question: null,   // the question on screen, host-only
     usedIds: new Set(),
     teams: [],        // [{ id, name, color }] — empty means free-for-all
+    scores: {},       // score key -> points. Keyed by team id in team mode, by
+                      // player name otherwise, so a reconnect keeps the score.
+    timer: null,      // { total, endsAt } while a countdown is running
 
     voice: {
       members: new Set(),   // socket ids with an open mic connection
@@ -39,12 +42,38 @@ function createRoom() {
 
 function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
   const room = createRoom();
+  let timerInterval = null;
   const nsp = io.of('/solo');
   const letterIndex = buildLetterIndex(questions);
   const hasQuestions = questions.length > 0;
 
   const findPlayer = (id) => room.players.find(p => p.id === id);
   const winner = () => room.presses[0] || null;
+
+  // Scores follow the team when there is one, and the person's name when there
+  // isn't — a socket id would reset every time someone's phone reconnects.
+  function scoreKeyOf(player) {
+    if (!player) return null;
+    if (room.teams.length && player.teamId != null) return `t:${player.teamId}`;
+    return `n:${player.name}`;
+  }
+
+  function scoreboard() {
+    if (room.teams.length) {
+      return room.teams.map(t => ({
+        key: `t:${t.id}`,
+        name: t.name,
+        color: t.color,
+        points: room.scores[`t:${t.id}`] || 0,
+      }));
+    }
+    return room.players.map(p => ({
+      key: `n:${p.name}`,
+      name: p.name,
+      color: p.color,
+      points: room.scores[`n:${p.name}`] || 0,
+    }));
+  }
 
   function teamNameOf(player) {
     if (!player || player.teamId == null) return null;
@@ -98,6 +127,13 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       round: room.round,
       armed: room.armed,
       teams: room.teams,
+      scores: scoreboard(),
+      winnerScoreKey: (() => {
+        const w = winner();
+        if (!w) return null;
+        const p = findPlayer(w.id);
+        return p ? scoreKeyOf(p) : (w.teamId != null ? `t:${w.teamId}` : `n:${w.name}`);
+      })(),
       players: room.players.map(p => ({
         id: p.id, name: p.name, color: p.color, teamId: p.teamId ?? null, teamName: teamNameOf(p),
       })),
@@ -134,6 +170,38 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     return out;
   }
 
+  // ---- Countdown -----------------------------------------------------------
+  // Everyone sees it: unlike the in-room Cell game, participants are not looking
+  // at the presenter's screen, so the clock has to reach their phones.
+  function timerPayload() {
+    if (!room.timer) return { running: false, remaining: 0, total: 0 };
+    const remaining = Math.max(0, Math.ceil((room.timer.endsAt - Date.now()) / 1000));
+    return { running: true, remaining, total: room.timer.total };
+  }
+
+  function stopTimer(silent) {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    room.timer = null;
+    if (!silent) nsp.emit('solo:timer', timerPayload());
+  }
+
+  function startTimer(seconds) {
+    stopTimer(true);
+    room.timer = { total: seconds, endsAt: Date.now() + seconds * 1000 };
+    nsp.emit('solo:timer', timerPayload());
+    timerInterval = setInterval(() => {
+      const payload = timerPayload();
+      nsp.emit('solo:timer', payload);
+      if (payload.remaining <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        room.timer = null;
+        nsp.emit('solo:timerEnd', {});
+        nsp.emit('solo:timer', timerPayload());
+      }
+    }, 250);
+  }
+
   function broadcast() {
     const forPlayers = snapshot(false);
     for (const [, s] of nsp.sockets) {
@@ -158,6 +226,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
 
   nsp.on('connection', (socket) => {
     socket.emit('solo:state', snapshot(false));
+    socket.emit('solo:timer', timerPayload());
 
     // ---- Player ------------------------------------------------------------
     socket.on('solo:join', ({ name, color, teamId } = {}) => {
@@ -306,6 +375,11 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
 
       room.teams = clean;
       const validIds = new Set(clean.map(t => t.id));
+      // A team that no longer exists loses its score; the rest keep theirs.
+      for (const key of Object.keys(room.scores)) {
+        if (!key.startsWith('t:')) continue;
+        if (!validIds.has(Number(key.slice(2)))) delete room.scores[key];
+      }
       const dropped = [];
       for (const p of room.players) {
         if (clean.length && !validIds.has(p.teamId)) dropped.push(p.id);
@@ -322,6 +396,36 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
           if (s) s.emit('solo:teamsChanged', {});
         }
       }
+      broadcast();
+    });
+
+    // ---- Scores -------------------------------------------------------------
+    socket.on('solo:award', ({ key, delta } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (typeof key !== 'string' || !key) return;
+      const step = Number(delta);
+      if (!Number.isFinite(step) || step === 0) return;
+      const clamped = Math.max(-10, Math.min(10, Math.round(step)));
+      const next = (room.scores[key] || 0) + clamped;
+      room.scores[key] = Math.max(-999, Math.min(999, next));
+      broadcast();
+    });
+
+    socket.on('solo:startTimer', ({ seconds } = {}) => {
+      if (!socket.data.soloHost) return;
+      const n = Number(seconds);
+      if (![5, 10].includes(n)) return;
+      startTimer(n);
+    });
+
+    socket.on('solo:stopTimer', () => {
+      if (!socket.data.soloHost) return;
+      stopTimer(false);
+    });
+
+    socket.on('solo:resetScores', () => {
+      if (!socket.data.soloHost) return;
+      room.scores = {};
       broadcast();
     });
 
@@ -347,6 +451,8 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       // from an earlier session must not carry into the next one.
       room.voice.mode = 'winner';
       room.voice.granted.clear();
+      room.scores = {};
+      stopTimer(true);
       nsp.emit('solo:cleared', {});
       broadcast();
       broadcastVoice();

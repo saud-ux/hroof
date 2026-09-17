@@ -749,3 +749,46 @@ body.solo { --team-current: #22c55e; }
 .mic-meter i { display: block; height: 100%; width: 0; background: var(--success, #22c55e); transition: width .06s linear; }
 .mic-meter[data-open="1"] { box-shadow: 0 0 0 1px var(--success, #22c55e); }
 .mic-meter[data-open="0"] i { background: var(--muted, #a1a1aa); }
+
+/* ---- Scoreboard ------------------------------------------------------------ */
+.btn-award {
+  background: var(--success, #22c55e); color: #0a0a0a;
+  font-weight: 900; padding: .55rem 1.1rem; border-radius: .7rem;
+  border: none; cursor: pointer; font-family: inherit;
+}
+.scoreboard { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--border, #3f3f46); }
+.scoreboard-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+.score-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.score-list li {
+  display: flex; align-items: center; gap: .5rem;
+  background: var(--surface-2, #27272a); border-radius: .6rem; padding: .4rem .6rem;
+}
+.score-name { flex: 1; font-weight: 700; }
+.score-points {
+  min-width: 2.2rem; text-align: center;
+  font-size: 1.25rem; font-weight: 900; font-variant-numeric: tabular-nums;
+}
+.score-btn {
+  width: 2rem; height: 2rem; border-radius: .5rem;
+  background: var(--surface, #18181b); color: var(--text, #fafafa);
+  border: 1px solid var(--border, #3f3f46);
+  font-size: 1.2rem; font-weight: 900; cursor: pointer; font-family: inherit;
+  display: grid; place-items: center;
+}
+.score-btn:hover { border-color: var(--success, #22c55e); }
+.score-btn:active { transform: scale(.92); }
+
+/* ---- Countdown ------------------------------------------------------------- */
+.timer-row { display: flex; gap: .5rem; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: .9rem; }
+.timer-btn {
+  background: var(--surface-2, #27272a); color: var(--text, #fafafa);
+  border: 1px solid var(--border, #3f3f46); border-radius: .7rem;
+  padding: .5rem 1rem; font-weight: 800; cursor: pointer; font-family: inherit;
+}
+.timer-btn:hover { border-color: var(--difficulty-medium, #f59e0b); }
+.timer-display {
+  font-size: 2rem; font-weight: 900; font-variant-numeric: tabular-nums;
+  min-width: 3rem; text-align: center; color: var(--difficulty-medium, #f59e0b);
+}
+.timer-display.big { font-size: clamp(3rem, 14vw, 6rem); margin-bottom: .5rem; }
+.timer-display.urgent { color: var(--danger, #ef4444); }

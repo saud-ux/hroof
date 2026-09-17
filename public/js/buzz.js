@@ -22,6 +22,7 @@
   const voiceStatus = document.getElementById('voice-status');
   const micMeter = document.getElementById('mic-meter');
   const micLevel = document.getElementById('mic-level');
+  const timerDisplay = document.getElementById('timer-display');
 
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -33,6 +34,11 @@
   let pickedColor = null;    // free-for-all mode only
 
   const STORE_TEAM = 'solo-buzz-team';
+
+  function myScoreKey() {
+    if (!me.id) return null;
+    return me.teamId != null ? `t:${me.teamId}` : `n:${me.name}`;
+  }
 
   function setButtonColor(color) {
     // The buzzer wears the team's colour, the way it does in the Cell game.
@@ -178,10 +184,13 @@
       }
     } else {
       winnerLine.textContent = '';
-      buzzerLabel.textContent = 'بانتظار المقدم';
+      buzzerLabel.textContent = 'بانتظار الهوست';
     }
 
-    playersLine.textContent = `جولة ${toArabic(last.round)} — ${toArabic(last.players.length)} مشارك`;
+    const mine = (last.scores || []).find(r => r.key === myScoreKey());
+    const scorePart = mine ? ` — نقاطك ${toArabic(mine.points)}` : '';
+    playersLine.textContent =
+      `جولة ${toArabic(last.round)} — ${toArabic(last.players.length)} مشارك${scorePart}`;
   }
 
   // ---- Voice ----
@@ -266,6 +275,42 @@
     lastRound = snap.round;
     render();
   });
+
+  socket.on('solo:timer', ({ running, remaining }) => {
+    timerDisplay.hidden = !running;
+    if (running) {
+      timerDisplay.textContent = toArabic(remaining);
+      timerDisplay.classList.toggle('urgent', remaining <= 3);
+    }
+  });
+
+  socket.on('solo:timerEnd', () => {
+    timerDisplay.hidden = false;
+    timerDisplay.textContent = 'انتهى';
+    timerDisplay.classList.add('urgent');
+    playTimerEnd();
+    setTimeout(() => { timerDisplay.hidden = true; timerDisplay.classList.remove('urgent'); }, 2500);
+  });
+
+  function playTimerEnd() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.55);
+      osc.onended = () => ctx.close();
+    } catch (_) { /* a missing beep is not worth failing over */ }
+  }
 
   socket.on('solo:kicked', () => { location.reload(); });
   socket.on('solo:teamsChanged', () => {

@@ -45,12 +45,20 @@
         <p class="solo-q-hint muted" id="q-hint"></p>
       </div>
 
+      <div class="timer-row">
+        <button class="btn timer-btn" data-seconds="5">⏱ ٥ ثوانٍ</button>
+        <button class="btn timer-btn" data-seconds="10">⏱ ١٠ ثوانٍ</button>
+        <button id="stop-timer" class="btn btn-ghost btn-small" hidden>إيقاف</button>
+        <span id="timer-display" class="timer-display" hidden>—</span>
+      </div>
+
       <div id="winner-box" class="solo-winner-box idle">
         <span id="winner-name">لم يبدأ الضغط</span>
         <span id="winner-ms" class="solo-ms"></span>
       </div>
 
       <div class="solo-controls">
+        <button id="award-btn" class="btn btn-award" hidden>✓ نقطة للفائز</button>
         <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر</button>
         <button id="next-btn" class="btn btn-next" hidden>جولة جديدة</button>
         <button id="disarm-btn" class="btn btn-ghost">قفل</button>
@@ -59,6 +67,14 @@
       </div>
 
       <ol id="press-order" class="solo-order"></ol>
+
+      <div class="scoreboard" id="scoreboard" hidden>
+        <div class="scoreboard-head">
+          <span class="muted">النقاط</span>
+          <button id="reset-scores" class="btn btn-ghost btn-small" type="button">تصفير النقاط</button>
+        </div>
+        <ul id="score-list" class="score-list"></ul>
+      </div>
     </section>
 
     <section class="solo-players">

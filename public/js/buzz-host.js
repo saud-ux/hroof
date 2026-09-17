@@ -13,6 +13,13 @@
   const disarmBtn = document.getElementById('disarm-btn');
   const clearBtn = document.getElementById('clear-btn');
   const pressOrder = document.getElementById('press-order');
+  const awardBtn = document.getElementById('award-btn');
+  const scoreboard = document.getElementById('scoreboard');
+  const scoreList = document.getElementById('score-list');
+  const resetScoresBtn = document.getElementById('reset-scores');
+  const timerButtons = Array.from(document.querySelectorAll('.timer-btn'));
+  const stopTimerBtn = document.getElementById('stop-timer');
+  const timerDisplay = document.getElementById('timer-display');
   const playersList = document.getElementById('players-list');
   const playersCount = document.getElementById('players-count');
   const qpick = document.getElementById('qpick');
@@ -253,6 +260,94 @@
 
   clearQBtn.addEventListener('click', () => socket.emit('solo:clearQuestion'));
 
+  // One tap awards the round to whoever pressed first — the common case.
+  awardBtn.addEventListener('click', () => {
+    if (!lastSnap || !lastSnap.winnerScoreKey) return;
+    socket.emit('solo:award', { key: lastSnap.winnerScoreKey, delta: 1 });
+  });
+
+  // ---- Countdown ----
+  timerButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      socket.emit('solo:startTimer', { seconds: Number(btn.dataset.seconds) });
+    });
+  });
+  stopTimerBtn.addEventListener('click', () => socket.emit('solo:stopTimer'));
+
+  socket.on('solo:timer', ({ running, remaining }) => {
+    timerDisplay.hidden = !running;
+    stopTimerBtn.hidden = !running;
+    if (running) {
+      timerDisplay.textContent = toArabic(remaining);
+      timerDisplay.classList.toggle('urgent', remaining <= 3);
+    }
+  });
+
+  socket.on('solo:timerEnd', () => {
+    timerDisplay.hidden = false;
+    timerDisplay.textContent = 'انتهى';
+    timerDisplay.classList.add('urgent');
+    playBeep();
+    setTimeout(() => { timerDisplay.hidden = true; timerDisplay.classList.remove('urgent'); }, 2500);
+  });
+
+  function playBeep() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.55);
+      osc.onended = () => ctx.close();
+    } catch (_) { /* a missing beep is not worth failing over */ }
+  }
+
+  resetScoresBtn.addEventListener('click', () => {
+    if (confirm('تصفير كل النقاط؟')) socket.emit('solo:resetScores');
+  });
+
+  function renderScores(snap) {
+    const rows = Array.isArray(snap.scores) ? snap.scores : [];
+    scoreboard.hidden = rows.length === 0;
+    scoreList.innerHTML = '';
+    rows.forEach(row => {
+      const li = document.createElement('li');
+      li.style.borderInlineStart = `4px solid ${row.color || 'transparent'}`;
+
+      const minus = document.createElement('button');
+      minus.className = 'score-btn';
+      minus.textContent = '−';
+      minus.title = 'إنقاص نقطة';
+      minus.addEventListener('click', () => socket.emit('solo:award', { key: row.key, delta: -1 }));
+
+      const name = document.createElement('span');
+      name.className = 'score-name';
+      name.textContent = row.name;
+
+      const pts = document.createElement('span');
+      pts.className = 'score-points';
+      pts.textContent = toArabic(row.points);
+
+      const plus = document.createElement('button');
+      plus.className = 'score-btn';
+      plus.textContent = '+';
+      plus.title = 'إضافة نقطة';
+      plus.addEventListener('click', () => socket.emit('solo:award', { key: row.key, delta: 1 }));
+
+      li.append(minus, name, pts, plus);
+      scoreList.appendChild(li);
+    });
+  }
+
   socket.on('solo:poolEmpty', ({ difficulty, letter }) => {
     alert(letter
       ? `لا توجد أسئلة ${difficulty} تبدأ إجابتها بحرف ${letter}.`
@@ -320,6 +415,10 @@
     });
 
     lastSnap = snap;
+    renderScores(snap);
+    const w = snap.winner;
+    awardBtn.hidden = !w || !snap.winnerScoreKey;
+    if (w) awardBtn.textContent = `✓ نقطة لـ ${w.teamName || w.name}`;
     if (Array.isArray(snap.palette) && snap.palette.length) palette = snap.palette;
     if (Array.isArray(snap.teams) && !editingTeams) {
       const on = snap.teams.length > 0;
