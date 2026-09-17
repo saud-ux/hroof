@@ -692,3 +692,25 @@ body.solo { --team-current: #22c55e; }
 .solo-q-answer { font-size: 1.05rem; margin: 0; }
 .solo-q-answer b { color: var(--success, #22c55e); }
 .solo-q-hint { margin: .4rem 0 0; font-size: .9rem; }
+
+/* ---- Voice chat ------------------------------------------------------------ */
+.voice-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: .6rem; flex-wrap: wrap; margin: .5rem 0;
+}
+.voice-panel {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding-bottom: .9rem; margin-bottom: .9rem;
+  border-bottom: 1px solid var(--border, #3f3f46);
+}
+.voice-mode { display: flex; align-items: center; gap: .35rem; font-size: .85rem; opacity: .85; }
+.voice-mode select { font-family: inherit; }
+.voice-status { font-size: .85rem; font-weight: 700; }
+.voice-status[data-state="live"]  { color: var(--success, #22c55e); }
+.voice-status[data-state="muted"] { color: var(--muted, #a1a1aa); }
+.voice-status[data-state="error"] { color: var(--danger, #ef4444); }
+.solo-mic {
+  background: none; border: none; cursor: pointer; font-size: 1rem;
+  font-family: inherit; opacity: .55; padding: 0 .2rem;
+}
+.solo-mic.on { opacity: 1; }

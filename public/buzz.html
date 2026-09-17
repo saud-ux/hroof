@@ -29,11 +29,16 @@
     </main>
     <footer class="solo-foot">
       <span id="winner-line" class="solo-winner-line"></span>
+      <div class="voice-bar">
+        <button id="voice-btn" class="btn btn-ghost btn-small">🎙 انضم للصوت</button>
+        <span id="voice-status" class="voice-status muted"></span>
+      </div>
       <span id="players-line" class="muted"></span>
     </footer>
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/voice.js"></script>
   <script src="/js/buzz.js"></script>
 </body>
 </html>

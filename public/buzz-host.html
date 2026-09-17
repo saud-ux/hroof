@@ -62,12 +62,26 @@
     </section>
 
     <section class="solo-players">
+      <div class="voice-panel">
+        <button id="voice-btn" class="btn btn-ghost btn-small">🎙 تشغيل الصوت</button>
+        <span id="voice-status" class="voice-status muted"></span>
+        <label class="voice-mode">
+          من يتكلم؟
+          <select id="voice-mode" class="qb-select">
+            <option value="winner">المقدم + الفائز</option>
+            <option value="open">الجميع</option>
+            <option value="host">المقدم فقط</option>
+          </select>
+        </label>
+      </div>
+
       <p class="muted">المشاركون (<span id="players-count">0</span>)</p>
       <ul id="players-list" class="solo-player-list"></ul>
     </section>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/voice.js"></script>
   <script src="/js/buzz-host.js"></script>
 </body>
 </html>

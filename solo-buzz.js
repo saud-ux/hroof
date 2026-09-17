@@ -18,6 +18,11 @@ function createRoom() {
     presses: [],      // [{ id, name, ms }] ordered by arrival; presses[0] is the winner
     question: null,   // the question on screen, host-only
     usedIds: new Set(),
+    voice: {
+      members: new Set(),   // socket ids with an open mic connection
+      granted: new Set(),   // ids the host explicitly un-muted
+      mode: 'winner',       // winner | open | host
+    },
   };
 }
 
@@ -29,6 +34,47 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
 
   const findPlayer = (id) => room.players.find(p => p.id === id);
   const winner = () => room.presses[0] || null;
+
+  // Who is allowed to transmit right now. Hosts always may; the rest depends on
+  // the mode and on whoever won the current round.
+  function speakerIds() {
+    const out = new Set();
+    for (const id of room.voice.members) {
+      const s = nsp.sockets.get(id);
+      if (s && s.data.soloHost) out.add(id);
+    }
+    if (room.voice.mode === 'open') {
+      for (const id of room.voice.members) out.add(id);
+    } else if (room.voice.mode === 'winner') {
+      const w = winner();
+      if (w && room.voice.members.has(w.id)) out.add(w.id);
+    }
+    for (const id of room.voice.granted) {
+      if (room.voice.members.has(id)) out.add(id);
+    }
+    return out;
+  }
+
+  function voicePayload() {
+    const speakers = speakerIds();
+    const members = [];
+    for (const id of room.voice.members) {
+      const s = nsp.sockets.get(id);
+      if (!s) continue;
+      const player = findPlayer(id);
+      members.push({
+        id,
+        name: player ? player.name : (s.data.soloHost ? 'المقدم' : 'ضيف'),
+        isHost: !!s.data.soloHost,
+        speaking: speakers.has(id),
+      });
+    }
+    return { members, mode: room.voice.mode, speakers: [...speakers] };
+  }
+
+  function broadcastVoice() {
+    nsp.emit('voice:room', voicePayload());
+  }
 
   function snapshot(forHost) {
     const base = {
@@ -123,6 +169,8 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
         ms: Math.max(0, Date.now() - room.armedAt),
       });
       broadcast();
+      // In "winner" mode the first press hands that phone the mic.
+      if (room.voice.mode === 'winner') broadcastVoice();
     });
 
     // ---- Host --------------------------------------------------------------
@@ -160,6 +208,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.armed = false;
       room.presses = [];
       broadcast();
+      if (room.voice.mode === 'winner') broadcastVoice();
     });
 
     socket.on('solo:arm', () => {
@@ -184,6 +233,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.armed = true;
       room.armedAt = Date.now();
       broadcast();
+      if (room.voice.mode === 'winner') broadcastVoice();
     });
 
     socket.on('solo:kick', ({ id } = {}) => {
@@ -207,7 +257,49 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       broadcast();
     });
 
+    // ---- Voice chat (WebRTC signalling only; audio never touches the server) --
+    socket.on('voice:join', () => {
+      room.voice.members.add(socket.id);
+      broadcastVoice();
+    });
+
+    socket.on('voice:leave', () => {
+      room.voice.members.delete(socket.id);
+      room.voice.granted.delete(socket.id);
+      nsp.emit('voice:peerLeft', { id: socket.id });
+      broadcastVoice();
+    });
+
+    // Relay an offer / answer / ICE candidate to one peer, untouched.
+    socket.on('voice:signal', ({ to, data } = {}) => {
+      if (typeof to !== 'string' || !data) return;
+      if (!room.voice.members.has(socket.id)) return;
+      const target = nsp.sockets.get(to);
+      if (!target || !room.voice.members.has(to)) return;
+      target.emit('voice:signal', { from: socket.id, data });
+    });
+
+    socket.on('voice:setMic', ({ id, on } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (on) room.voice.granted.add(id);
+      else room.voice.granted.delete(id);
+      broadcastVoice();
+    });
+
+    socket.on('voice:setMode', ({ mode } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (!['winner', 'open', 'host'].includes(mode)) return;
+      room.voice.mode = mode;
+      room.voice.granted.clear();
+      broadcastVoice();
+    });
+
     socket.on('disconnect', () => {
+      if (room.voice.members.delete(socket.id)) {
+        room.voice.granted.delete(socket.id);
+        nsp.emit('voice:peerLeft', { id: socket.id });
+        broadcastVoice();
+      }
       const before = room.players.length;
       room.players = room.players.filter(p => p.id !== socket.id);
       if (room.players.length !== before) broadcast();

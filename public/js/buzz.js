@@ -12,6 +12,8 @@
   const buzzerLabel = document.getElementById('buzzer-label');
   const winnerLine = document.getElementById('winner-line');
   const playersLine = document.getElementById('players-line');
+  const voiceBtn = document.getElementById('voice-btn');
+  const voiceStatus = document.getElementById('voice-status');
 
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -75,6 +77,32 @@
     playersLine.textContent = `جولة ${toArabic(last.round)} — ${toArabic(last.players.length)} مشارك`;
   }
 
+  // ---- Voice ----
+  const voice = window.createVoice({
+    socket,
+    isHost: false,
+    onStatus: (text, state) => {
+      voiceStatus.textContent = text;
+      voiceStatus.dataset.state = state || '';
+    },
+    onRoom: () => {
+      voiceBtn.textContent = voice.isJoined() ? '🔇 خروج من الصوت' : '🎙 انضم للصوت';
+    },
+  });
+
+  voiceBtn.addEventListener('click', async () => {
+    if (!me.id) return;
+    if (voice.isJoined()) {
+      voice.leave();
+      voiceBtn.textContent = '🎙 انضم للصوت';
+      return;
+    }
+    voiceBtn.disabled = true;
+    const ok = await voice.join(me.id);
+    voiceBtn.disabled = false;
+    if (ok) voiceBtn.textContent = '🔇 خروج من الصوت';
+  });
+
   const press = (e) => {
     if (e) e.preventDefault();
     if (buzzer.disabled) return;
@@ -98,6 +126,7 @@
     nameView.hidden = true;
     buzzView.hidden = false;
     nameError.hidden = true;
+    voice.setSelfId(id);
     render();
   });
 

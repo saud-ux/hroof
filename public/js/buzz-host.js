@@ -26,6 +26,10 @@
   const qHint = document.getElementById('q-hint');
   const clearQBtn = document.getElementById('clear-q-btn');
 
+  const voiceBtn = document.getElementById('voice-btn');
+  const voiceStatus = document.getElementById('voice-status');
+  const voiceMode = document.getElementById('voice-mode');
+
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
 
@@ -48,6 +52,39 @@
   shareQr.addEventListener('error', () => { shareQr.hidden = true; });
 
   socket.on('connect', () => socket.emit('solo:hostRegister'));
+
+  // ---- Voice ----
+  let voiceRoom = { members: [], speakers: [], mode: 'winner' };
+  let lastSnap = null;
+  const voice = window.createVoice({
+    socket,
+    isHost: true,
+    onStatus: (text, state) => {
+      voiceStatus.textContent = text;
+      voiceStatus.dataset.state = state || '';
+    },
+    onRoom: (room) => {
+      voiceRoom = room;
+      voiceMode.value = room.mode;
+      renderPlayers(); // mic buttons follow who may speak right now
+    },
+  });
+
+  voiceBtn.addEventListener('click', async () => {
+    if (voice.isJoined()) {
+      voice.leave();
+      voiceBtn.textContent = '🎙 تشغيل الصوت';
+      return;
+    }
+    voiceBtn.disabled = true;
+    const ok = await voice.join(socket.id);
+    voiceBtn.disabled = false;
+    if (ok) voiceBtn.textContent = '🔇 إيقاف الصوت';
+  });
+
+  voiceMode.addEventListener('change', () => {
+    socket.emit('voice:setMode', { mode: voiceMode.value });
+  });
 
   function remainingFor(difficulty) {
     if (st.letter && st.letterCounts && st.letterCounts[difficulty]) {
@@ -163,6 +200,13 @@
       pressOrder.appendChild(li);
     });
 
+    lastSnap = snap;
+    renderPlayers();
+  });
+
+  function renderPlayers() {
+    const snap = lastSnap;
+    if (!snap) return;
     playersCount.textContent = toArabic(snap.players.length);
     playersList.innerHTML = '';
     snap.players.forEach(p => {
@@ -170,6 +214,17 @@
       const pressed = snap.presses.some(x => x.id === p.id);
       li.innerHTML = `<span>${p.name}</span>`;
       if (pressed) li.classList.add('pressed');
+      const inVoice = voiceRoom.members.some(m => m.id === p.id);
+      if (inVoice) {
+        const speaking = voiceRoom.speakers.includes(p.id);
+        const mic = document.createElement('button');
+        mic.className = 'solo-mic' + (speaking ? ' on' : '');
+        mic.textContent = speaking ? '🎙' : '🔇';
+        mic.title = speaking ? 'اكتم مايكه' : 'افتح مايكه';
+        mic.addEventListener('click', () => socket.emit('voice:setMic', { id: p.id, on: !speaking }));
+        li.appendChild(mic);
+      }
+
       const kick = document.createElement('button');
       kick.className = 'solo-kick';
       kick.textContent = '×';
@@ -178,5 +233,5 @@
       li.appendChild(kick);
       playersList.appendChild(li);
     });
-  });
+  }
 })();
