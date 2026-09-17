@@ -35,6 +35,12 @@
   const qAnswer = document.getElementById('q-answer');
   const qHint = document.getElementById('q-hint');
   const clearQBtn = document.getElementById('clear-q-btn');
+  const awardLabel = document.getElementById('award-label');
+  const statePill = document.getElementById('state-pill');
+  const soundBtn = document.getElementById('sound-btn');
+  const toggleAnswerBtn = document.getElementById('toggle-answer');
+  const qrFold = document.getElementById('qr-fold');
+  const toastEl = document.getElementById('host-toast');
 
   const voiceBtn = document.getElementById('voice-btn');
   const voiceStatus = document.getElementById('voice-status');
@@ -61,13 +67,112 @@
     .then(({ buzz }) => { shareLink.textContent = buzz; })
     .catch(() => { shareLink.textContent = `${location.origin}/buzz`; });
 
+  // ---- Small helpers ----
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* ignore */ } },
+  };
+
+  // A message in the page instead of alert(), which froze the keyboard flow.
+  let toastTimer = null;
+  function toast(text, kind = '') {
+    toastEl.textContent = text;
+    toastEl.dataset.kind = kind;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  }
+
+  // navigator.clipboard only exists on https/localhost; on a plain http LAN
+  // link fall back to the old copy command so the button still works.
   copyLink.addEventListener('click', async () => {
+    const text = shareLink.textContent;
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(shareLink.textContent);
-      copyLink.textContent = 'تم النسخ';
-      setTimeout(() => { copyLink.textContent = 'نسخ'; }, 1500);
-    } catch (_) { /* clipboard blocked on plain http — the link is visible anyway */ }
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch (_) { /* fall through */ }
+    if (!ok) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      ta.remove();
+    }
+    copyLink.textContent = ok ? 'تم النسخ' : 'انسخ يدويًا';
+    setTimeout(() => { copyLink.textContent = 'نسخ'; }, 1500);
   });
+
+  // The QR is only needed while people join; remember when the host folds it.
+  if (store.get('host-qr-open', '1') === '0') qrFold.open = false;
+  qrFold.addEventListener('toggle', () => store.set('host-qr-open', qrFold.open ? '1' : '0'));
+
+  // ---- Sound ----
+  // One audio context, woken by the host's first click, so the cue can play
+  // later when a press arrives (browsers block audio started without a tap).
+  let audioCtx = null;
+  let soundOn = store.get('host-sound', '1') === '1';
+  function unlockAudio() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    try {
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (_) { /* ignore */ }
+  }
+  ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, unlockAudio, { capture: true, passive: true }));
+
+  function tone(freq, start, dur, peak = 0.25, type = 'sine') {
+    const ctx = audioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(peak, ctx.currentTime + start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime + start);
+    osc.stop(ctx.currentTime + start + dur + 0.05);
+  }
+  function playBuzz() {
+    if (!soundOn) return;
+    try { unlockAudio(); if (!audioCtx) return; tone(660, 0, 0.18, 0.28, 'triangle'); tone(990, 0.12, 0.35, 0.24, 'triangle'); } catch (_) { /* ignore */ }
+  }
+
+  function renderSoundBtn() {
+    soundBtn.setAttribute('aria-pressed', String(soundOn));
+    soundBtn.textContent = soundOn ? '🔔 الصوت' : '🔕 صامت';
+  }
+  soundBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    store.set('host-sound', soundOn ? '1' : '0');
+    renderSoundBtn();
+  });
+  renderSoundBtn();
+
+  // ---- Answer privacy ----
+  // When the host screen is on a projector, the answer can be blurred and
+  // peeked at by holding the mouse over it.
+  let answerHidden = store.get('host-answer-hidden', '0') === '1';
+  function renderAnswerToggle() {
+    questionBox.classList.toggle('answer-hidden', answerHidden);
+    toggleAnswerBtn.setAttribute('aria-pressed', String(answerHidden));
+    toggleAnswerBtn.firstChild.textContent = answerHidden ? 'إظهار الإجابة ' : 'إخفاء الإجابة ';
+  }
+  function toggleAnswer() {
+    answerHidden = !answerHidden;
+    store.set('host-answer-hidden', answerHidden ? '1' : '0');
+    renderAnswerToggle();
+  }
+  toggleAnswerBtn.addEventListener('click', toggleAnswer);
+  renderAnswerToggle();
 
   shareQr.addEventListener('error', () => { shareQr.hidden = true; });
 
@@ -167,6 +272,7 @@
   // ---- Voice ----
   let voiceRoom = { members: [], speakers: [], mode: 'winner' };
   let lastSnap = null;
+  let lastWinnerKey = null;   // null until the first state, so a reload stays quiet
   const voice = window.createVoice({
     socket,
     isHost: true,
@@ -296,9 +402,9 @@
 
   function playBeep() {
     try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
+      unlockAudio();
+      if (!audioCtx) return;
+      const ctx = audioCtx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -310,7 +416,6 @@
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.55);
-      osc.onended = () => ctx.close();
     } catch (_) { /* a missing beep is not worth failing over */ }
   }
 
@@ -318,13 +423,21 @@
     if (confirm('تصفير كل النقاط؟')) socket.emit('solo:resetScores');
   });
 
+  const prevPoints = new Map();
   function renderScores(snap) {
     const rows = Array.isArray(snap.scores) ? snap.scores : [];
     scoreboard.hidden = rows.length === 0;
     scoreList.innerHTML = '';
+    const top = rows.reduce((m, r) => Math.max(m, r.points), 0);
+    const leaders = rows.filter(r => r.points === top).length;
     rows.forEach(row => {
       const li = document.createElement('li');
       li.style.borderInlineStart = `4px solid ${row.color || 'transparent'}`;
+      // A sole leader is marked; a tie is not a lead.
+      if (top > 0 && leaders === 1 && row.points === top) li.classList.add('lead');
+      const before = prevPoints.get(row.key);
+      if (before !== undefined && before !== row.points) li.classList.add(row.points > before ? 'bump-up' : 'bump-down');
+      prevPoints.set(row.key, row.points);
 
       const minus = document.createElement('button');
       minus.className = 'score-btn';
@@ -352,9 +465,41 @@
   }
 
   socket.on('solo:poolEmpty', ({ difficulty, letter }) => {
-    alert(letter
+    toast(letter
       ? `لا توجد أسئلة ${difficulty} تبدأ إجابتها بحرف ${letter}.`
-      : `انتهت أسئلة الصعوبة ${difficulty}.`);
+      : `انتهت أسئلة الصعوبة ${difficulty}.`, 'warn');
+  });
+
+  // ---- Keyboard: run a round without the mouse ----
+  // Physical key codes, so the shortcuts work with an Arabic layout too.
+  const clickIfShown = (btn) => {
+    if (!btn || btn.hidden || btn.disabled) return false;
+    btn.click();
+    return true;
+  };
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    const t = e.target;
+    if (t.closest('input, textarea, select, [contenteditable="true"]')) return;
+    // Space/Enter on a focused button already click it; don't click twice.
+    if ((e.code === 'Space' || e.code === 'Enter') && t.closest('button, summary')) return;
+
+    let handled = false;
+    switch (e.code) {
+      case 'Space': handled = clickIfShown(armBtn); break;
+      case 'Escape': handled = clickIfShown(disarmBtn); break;
+      case 'KeyN': case 'Enter': handled = clickIfShown(nextBtn); break;
+      case 'KeyA': handled = clickIfShown(awardBtn); break;
+      case 'KeyH': if (!questionBox.hidden) { toggleAnswer(); handled = true; } break;
+      case 'Digit1': case 'Numpad1': handled = clickIfShown(diffRow.querySelector('[data-diff="سهل"]')); break;
+      case 'Digit2': case 'Numpad2': handled = clickIfShown(diffRow.querySelector('[data-diff="متوسط"]')); break;
+      case 'Digit3': case 'Numpad3': handled = clickIfShown(diffRow.querySelector('[data-diff="صعب"]')); break;
+      case 'Digit5': case 'Numpad5': handled = clickIfShown(timerButtons.find(b => b.dataset.seconds === '5')); break;
+      case 'Digit0': case 'Numpad0': handled = clickIfShown(timerButtons.find(b => b.dataset.seconds === '10')); break;
+      default: return;
+    }
+    // Space never scrolls the desk mid-round, even when there is nothing to open.
+    if (handled || e.code === 'Space') e.preventDefault();
   });
 
   armBtn.addEventListener('click', () => socket.emit('solo:arm'));
@@ -393,9 +538,17 @@
     const winner = snap.winner;
     winnerBox.classList.toggle('idle', !winner);
     winnerBox.classList.toggle('hit', !!winner);
-    if (stageCard) {
-      stageCard.dataset.state = winner ? 'hit' : (snap.armed ? 'armed' : 'closed');
-    }
+    const roomState = winner ? 'hit' : (snap.armed ? 'armed' : 'closed');
+    if (stageCard) stageCard.dataset.state = roomState;
+    statePill.dataset.state = roomState;
+    statePill.textContent = winner
+      ? `ضغط ${winner.teamName || winner.name}`
+      : (snap.armed ? 'الزر مفتوح' : 'الزر مقفل');
+
+    // A new first press gets a sound, so the host can look at the players.
+    const winnerKey = winner ? `${snap.round}:${winner.id}` : null;
+    if (winnerKey && lastWinnerKey !== null && winnerKey !== lastWinnerKey) playBuzz();
+    lastWinnerKey = winnerKey || '';
     if (winner) {
       winnerName.textContent = winner.teamName ? `${winner.name} — ${winner.teamName}` : winner.name;
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
@@ -426,7 +579,7 @@
     renderScores(snap);
     const w = snap.winner;
     awardBtn.hidden = !w || !snap.winnerScoreKey;
-    if (w) awardBtn.textContent = `✓ نقطة لـ ${w.teamName || w.name}`;
+    if (w) awardLabel.textContent = `✓ نقطة لـ ${w.teamName || w.name}`;
     if (Array.isArray(snap.palette) && snap.palette.length) palette = snap.palette;
     if (Array.isArray(snap.teams) && !editingTeams) {
       const on = snap.teams.length > 0;

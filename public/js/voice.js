@@ -351,7 +351,8 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
       selfId = id;
       if (joined) return true;
       if (!navigator.mediaDevices || !window.RTCPeerConnection) {
-        status('المتصفح لا يدعم الصوت', 'error');
+        // Safari and Chrome hide the microphone on plain http:// LAN links.
+        status(window.isSecureContext === false ? 'الصوت يحتاج رابط https' : 'المتصفح لا يدعم الصوت', 'error');
         return false;
       }
       try {

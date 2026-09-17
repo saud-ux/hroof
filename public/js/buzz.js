@@ -35,6 +35,44 @@
   let pickedColor = null;    // free-for-all mode only
 
   const STORE_TEAM = 'solo-buzz-team';
+  let prevArmed = false;
+  let prevWinnerId = null;
+
+  // Android vibrates. iOS Safari has no vibration API, but since iOS 18 toggling
+  // a native switch control gives a light haptic tick; it only fires inside a
+  // tap, so on iPhone the press is felt and the other cues stay silent.
+  const buzz = (pattern) => {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(pattern); } catch (_) { /* ignore */ }
+      return;
+    }
+    try {
+      const label = document.createElement('label');
+      label.ariaHidden = 'true';
+      label.style.display = 'none';
+      const sw = document.createElement('input');
+      sw.type = 'checkbox';
+      sw.setAttribute('switch', '');
+      label.appendChild(sw);
+      document.head.appendChild(label);
+      label.click();
+      label.remove();
+    } catch (_) { /* ignore */ }
+  };
+
+  // Safari starts audio suspended until a tap, so a beep created later by a
+  // timer stays silent. One context, woken on the first touch, fixes that.
+  let audioCtx = null;
+  function unlockAudio() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    try {
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (_) { /* ignore */ }
+  }
+  ['pointerdown', 'touchend', 'keydown'].forEach(type =>
+    document.addEventListener(type, unlockAudio, { capture: true, passive: true }));
 
   // A compact live standing so a player can follow the match without the
   // presenter reading the score out after every round.
@@ -180,8 +218,17 @@
     const iPressed = last.presses.some(p => p.id === me.id);
     const iWon = winner && winner.id === me.id;
 
-    buzzer.classList.remove('armed', 'locked', 'pressed', 'waiting');
+    // Haptics mark the moments a player might miss while watching the host.
+    const wasArmed = prevArmed;
+    const hadWinner = prevWinnerId;
+    prevArmed = !!last.armed && !winner;
+    prevWinnerId = winner ? winner.id : null;
+    if (winner && winner.id !== hadWinner) buzz(iWon ? [70, 50, 140] : 25);
+    else if (prevArmed && !wasArmed && !iPressed) buzz(30);
+
+    buzzer.classList.remove('armed', 'locked', 'pressed', 'waiting', 'sent');
     buzzView.classList.remove('win');
+    buzzView.classList.toggle('live', prevArmed && !iPressed);
     buzzer.disabled = true;
 
     if (winner) {
@@ -198,6 +245,7 @@
     } else if (last.armed) {
       winnerLine.textContent = '';
       if (iPressed) {
+        buzzer.classList.add('sent');
         buzzerLabel.textContent = 'تم الإرسال…';
       } else {
         buzzer.classList.add('armed');
@@ -251,13 +299,35 @@
   const press = (e) => {
     if (e) e.preventDefault();
     if (buzzer.disabled) return;
+    buzzer.disabled = true;           // one press per round, however fast the thumbs
     buzzer.classList.add('pressed');
-    if (navigator.vibrate) { try { navigator.vibrate(40); } catch (_) { /* ignore */ } }
+    buzz(40);
     socket.emit('solo:press');
+    // The server answers with a state broadcast; if a dropped packet means it
+    // never does, re-render so the button is not left dead.
+    setTimeout(render, 1500);
   };
   buzzer.addEventListener('pointerdown', press);
   buzzer.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
   buzzer.addEventListener('click', (e) => e.preventDefault());
+
+  // In a race a thumb lands near the disc as often as on it: while the button
+  // is live, the whole middle of the screen presses it.
+  const buzzerMain = buzzer.closest('.buzzer-main');
+  if (buzzerMain) {
+    buzzerMain.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('#buzzer') || buzzer.disabled) return;
+      press(e);
+    });
+  }
+
+  // Keep the phone awake between rounds (needs HTTPS or localhost).
+  let wakeLock = null;
+  async function keepAwake() {
+    if (!('wakeLock' in navigator) || buzzView.hidden || document.visibilityState !== 'visible') return;
+    if (wakeLock && !wakeLock.released) return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (_) { /* battery saver, etc. */ }
+  }
 
   // Space bar for laptops
   document.addEventListener('keydown', (e) => {
@@ -278,6 +348,7 @@
     nameError.hidden = true;
     voice.setSelfId(id);
     render();
+    keepAwake();
   });
 
   socket.on('solo:joinRejected', ({ reason }) => {
@@ -293,9 +364,7 @@
       if (hadTeams !== teamMode()) pickedTeamId = teamMode() ? pickedTeamId : null;
       showEntry();
     }
-    if (lastRound !== null && snap.round !== lastRound && navigator.vibrate) {
-      try { navigator.vibrate(20); } catch (_) { /* ignore */ }
-    }
+    if (lastRound !== null && snap.round !== lastRound) buzz(20);
     lastRound = snap.round;
     render();
   });
@@ -318,9 +387,9 @@
 
   function playTimerEnd() {
     try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
+      unlockAudio();
+      const ctx = audioCtx;
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -332,7 +401,6 @@
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.55);
-      osc.onended = () => ctx.close();
     } catch (_) { /* a missing beep is not worth failing over */ }
   }
 
@@ -344,9 +412,28 @@
   socket.on('solo:cleared', () => { location.reload(); });
 
   // Re-join automatically after a reconnect so a dropped phone comes back ready.
+  // The team and colour must travel too: in team mode the server refuses a
+  // join without a team, which left a phone stuck after every screen lock.
   socket.on('connect', () => {
-    if (me.name) socket.emit('solo:join', { name: me.name });
+    if (me.name) {
+      socket.emit('solo:join', {
+        name: me.name,
+        teamId: me.teamId ?? undefined,
+        color: me.teamId == null ? me.color : undefined,
+      });
+    }
   });
+
+  // Safari freezes a backgrounded or locked tab and may hand it back with a
+  // dead socket; reconnect straight away instead of waiting for a timeout.
+  const wake = () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!socket.connected) socket.connect();
+    keepAwake();
+  };
+  document.addEventListener('visibilitychange', wake);
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('focus', wake);
 
   socket.on('disconnect', () => {
     buzzer.disabled = true;
