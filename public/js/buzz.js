@@ -52,7 +52,7 @@
     if (winner) {
       if (iWon) {
         buzzView.classList.add('win');
-        buzzerLabel.textContent = 'بزيت أولاً!';
+        buzzerLabel.textContent = 'ضغطت أولاً!';
       } else {
         buzzer.classList.add('locked');
         buzzerLabel.textContent = 'مقفل';
