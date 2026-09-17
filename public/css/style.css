@@ -742,3 +742,8 @@ body.solo { --team-current: #22c55e; }
   display: inline-block; width: .6rem; height: .6rem; border-radius: 50%;
   margin-inline-end: .45rem; vertical-align: middle;
 }
+.mic-meter {
+  display: inline-block; width: 4rem; height: .45rem; border-radius: .3rem;
+  background: var(--surface-2, #27272a); overflow: hidden; vertical-align: middle;
+}
+.mic-meter i { display: block; height: 100%; width: 0; background: var(--success, #22c55e); transition: width .06s linear; }

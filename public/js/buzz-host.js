@@ -28,6 +28,8 @@
 
   const voiceBtn = document.getElementById('voice-btn');
   const voiceStatus = document.getElementById('voice-status');
+  const micMeter = document.getElementById('mic-meter');
+  const micLevel = document.getElementById('mic-level');
   const voiceMode = document.getElementById('voice-mode');
   const voiceAllBtn = document.getElementById('voice-all-btn');
 
@@ -169,6 +171,10 @@
       voiceAllBtn.classList.toggle('on', open);
       voiceAllBtn.textContent = open ? '🔇 أغلق مايك الجميع' : '🎙 افتح المايك للجميع';
       renderPlayers(); // mic buttons follow who may speak right now
+    },
+    onLevel: (v) => {
+      micMeter.hidden = !voice.isJoined();
+      micLevel.style.width = `${Math.round(v * 100)}%`;
     },
   });
 

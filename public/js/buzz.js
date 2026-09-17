@@ -20,6 +20,8 @@
   const playersLine = document.getElementById('players-line');
   const voiceBtn = document.getElementById('voice-btn');
   const voiceStatus = document.getElementById('voice-status');
+  const micMeter = document.getElementById('mic-meter');
+  const micLevel = document.getElementById('mic-level');
 
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -192,6 +194,10 @@
     },
     onRoom: () => {
       voiceBtn.textContent = voice.isJoined() ? '🔇 خروج من الصوت' : '🎙 انضم للصوت';
+    },
+    onLevel: (v) => {
+      micMeter.hidden = !voice.isJoined();
+      micLevel.style.width = `${Math.round(v * 100)}%`;
     },
   });
 

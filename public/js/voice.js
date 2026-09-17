@@ -5,16 +5,16 @@
 // "winner" mode that means every phone holds at most two connections — the
 // presenter, and whoever buzzed first.
 
-window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) {
+window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, onLevel }) {
   const ICE = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
   ];
 
   // Browsers default Opus to roughly phone quality (~24-32 kbps). Voice stays
-  // mono, so 64 kbps is plenty of headroom for clearly better speech without
-  // straining a phone's uplink.
-  const TARGET_BITRATE = 64000;
+  // mono, and only the presenter plus one answerer ever transmit, so we can
+  // afford a rate that is effectively transparent for speech.
+  const TARGET_BITRATE = 96000;
 
   // Rewrite the Opus parameters the browser advertises. In-band FEC is the big
   // one on mobile: it rebuilds short dropouts instead of leaving a gap. DTX
@@ -30,7 +30,10 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
         `maxaveragebitrate=${TARGET_BITRATE}`,
         'maxplaybackrate=48000',
         'useinbandfec=1',
-        'usedtx=1',
+        // A muted mic detaches its track entirely (see applyMic), so nothing is
+        // sent while silent and DTX has nothing left to save. Turning it off
+        // avoids the clipped first syllable it causes when speech resumes.
+        'usedtx=0',
       ];
 
       const fmtpLine = new RegExp(`a=fmtp:${payload} (.*)`);
@@ -71,6 +74,8 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
   let selfId = null;
   let room = { members: [], mode: 'winner', speakers: [] };
   let joined = false;
+  let levelCtx = null;
+  let levelTimer = null;
 
   const amSpeaker = () => room.speakers.includes(selfId);
   const isSpeaker = (id) => room.speakers.includes(id);
@@ -79,10 +84,24 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
     if (onStatus) onStatus(text, state);
   }
 
+  // Muting detaches the track from every sender rather than muting it in place.
+  // A disabled track still streams silence; a detached one sends nothing at all,
+  // which is both honest about privacy and frees the uplink completely.
   function applyMic() {
     if (!localStream) return;
     const on = amSpeaker();
-    localStream.getAudioTracks().forEach(t => { t.enabled = on; });
+    const track = localStream.getAudioTracks()[0] || null;
+    if (track) track.enabled = on;
+
+    for (const entry of peers.values()) {
+      if (!entry.sender) continue;
+      const wanted = on ? track : null;
+      if (entry.sender.track === wanted) continue;
+      try {
+        const p = entry.sender.replaceTrack(wanted);
+        if (p && p.catch) p.catch(() => {});
+      } catch (_) { /* older browsers fall back to the enabled flag above */ }
+    }
     status(on ? 'مايكك مفتوح' : 'مايكك مكتوم', on ? 'live' : 'muted');
   }
 
@@ -101,11 +120,14 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
   function createPeer(id, initiator) {
     if (peers.has(id)) return peers.get(id);
     const pc = new RTCPeerConnection({ iceServers: ICE });
-    const entry = { pc, audio: attachAudio(id) };
+    const entry = { pc, audio: attachAudio(id), sender: null };
     peers.set(id, entry);
 
     if (localStream) {
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      const track = localStream.getAudioTracks()[0];
+      // Always add the track so the audio line is negotiated, then let applyMic
+      // detach it again if this peer is not allowed to speak yet.
+      if (track) entry.sender = pc.addTrack(track, localStream);
     }
 
     pc.onicecandidate = (e) => {
@@ -198,6 +220,39 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
     } catch (_) { /* a stale candidate before the description is safe to drop */ }
   });
 
+  // A small running level so someone can see their mic is picking up at all,
+  // instead of guessing why nobody hears them.
+  function startLevelMeter() {
+    if (!onLevel || !localStream) return;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const src = ctx.createMediaStreamSource(localStream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      levelCtx = ctx;
+      const tick = () => {
+        if (!joined) { try { ctx.close(); } catch (_) {} return; }
+        analyser.getByteTimeDomainData(buf);
+        let peak = 0;
+        for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+        onLevel(amSpeaker() ? Math.min(1, peak / 60) : 0);
+        levelTimer = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (_) { /* the meter is a nicety, never a blocker */ }
+  }
+
+  function stopLevelMeter() {
+    if (levelTimer) cancelAnimationFrame(levelTimer);
+    levelTimer = null;
+    if (levelCtx) { try { levelCtx.close(); } catch (_) {} levelCtx = null; }
+    if (onLevel) onLevel(0);
+  }
+
   return {
     async join(id) {
       selfId = id;
@@ -224,6 +279,7 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
       }
       joined = true;
       applyMic();
+      startLevelMeter();
       socket.emit('voice:join');
       status(isHost ? 'مايكك مفتوح' : 'مايكك مكتوم', isHost ? 'live' : 'muted');
       return true;
@@ -232,6 +288,7 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
     leave() {
       if (!joined) return;
       joined = false;
+      stopLevelMeter();
       socket.emit('voice:leave');
       for (const id of [...peers.keys()]) closePeer(id);
       if (localStream) localStream.getTracks().forEach(t => t.stop());
