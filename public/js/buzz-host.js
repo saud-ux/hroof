@@ -300,7 +300,7 @@
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
       winnerBox.style.background = winner.color || '';
     } else {
-      winnerName.textContent = snap.armed ? 'البزّ مفتوح…' : 'مقفل';
+      winnerName.textContent = snap.armed ? 'الزر مفتوح…' : 'مقفل';
       winnerMs.textContent = '';
       winnerBox.style.background = '';
     }
