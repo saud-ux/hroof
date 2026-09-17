@@ -12,9 +12,22 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
   ];
 
   // Browsers default Opus to roughly phone quality (~24-32 kbps). Voice stays
-  // mono, and only the presenter plus one answerer ever transmit, so we can
-  // afford a rate that is effectively transparent for speech.
-  const TARGET_BITRATE = 96000;
+  // mono, so we can afford far more than that — but a speaker sends a separate
+  // copy to every listener, so the rate has to come down as the room grows or a
+  // phone's uplink is the thing that breaks. The budget is the total a single
+  // speaker uploads; the per-connection rate is that split between listeners.
+  const UPLOAD_BUDGET = 300000;
+  const MAX_BITRATE = 96000;   // 1-3 listeners: transparent for speech
+  const MIN_BITRATE = 32000;   // large rooms: still clearly better than default
+
+  function bitrateFor(listeners) {
+    const n = Math.max(1, listeners);
+    return Math.max(MIN_BITRATE, Math.min(MAX_BITRATE, Math.round(UPLOAD_BUDGET / n)));
+  }
+
+  // The SDP is negotiated once per peer, so it advertises the ceiling; the live
+  // rate is what setParameters enforces below as the room changes size.
+  const TARGET_BITRATE = MAX_BITRATE;
 
   // Rewrite the Opus parameters the browser advertises. In-band FEC is the big
   // one on mobile: it rebuilds short dropouts instead of leaving a gap. DTX
@@ -55,18 +68,22 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
     }
   }
 
-  // The fmtp line is a hint; this sets the actual send bitrate.
-  async function raiseBitrate(pc) {
-    try {
-      for (const sender of pc.getSenders()) {
-        if (!sender.track || sender.track.kind !== 'audio') continue;
+  // The fmtp line is a hint; this sets the actual send bitrate, and is re-applied
+  // whenever the number of people we send to changes.
+  async function applyBitrate() {
+    const rate = bitrateFor(peers.size);
+    for (const entry of peers.values()) {
+      const sender = entry.sender;
+      if (!sender) continue;
+      try {
         const params = sender.getParameters();
         if (!params.encodings || !params.encodings.length) params.encodings = [{}];
-        params.encodings[0].maxBitrate = TARGET_BITRATE;
+        if (params.encodings[0].maxBitrate === rate) continue;
+        params.encodings[0].maxBitrate = rate;
         params.encodings[0].priority = 'high';
         await sender.setParameters(params);
-      }
-    } catch (_) { /* unsupported on some browsers; the fmtp hint still applies */ }
+      } catch (_) { /* unsupported on some browsers; the fmtp hint still applies */ }
+    }
   }
 
   const peers = new Map();   // peerId -> { pc, audio }
@@ -155,7 +172,7 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
           const offer = await pc.createOffer();
           offer.sdp = tuneOpus(offer.sdp);
           await pc.setLocalDescription(offer);
-          await raiseBitrate(pc);
+          await applyBitrate();
           socket.emit('voice:signal', { to: id, data: { description: pc.localDescription } });
         } catch (_) { /* renegotiation races are retried by the next event */ }
       };
@@ -190,6 +207,7 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
       if (!peers.has(id)) createPeer(id, selfId < id);
     }
     applyMic();
+    applyBitrate(); // the room just changed size, so the split changed too
   }
 
   socket.on('voice:room', (payload) => {
@@ -211,7 +229,7 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
           const answer = await pc.createAnswer();
           answer.sdp = tuneOpus(answer.sdp);
           await pc.setLocalDescription(answer);
-          await raiseBitrate(pc);
+          await applyBitrate();
           socket.emit('voice:signal', { to: from, data: { description: pc.localDescription } });
         }
       } else if (data.candidate) {

@@ -343,8 +343,13 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.question = null;
       room.usedIds = new Set();
       room.teams = [];
+      // Clearing the room means clearing everything: an open-mic mode left over
+      // from an earlier session must not carry into the next one.
+      room.voice.mode = 'winner';
+      room.voice.granted.clear();
       nsp.emit('solo:cleared', {});
       broadcast();
+      broadcastVoice();
     });
 
     // ---- Voice chat (WebRTC signalling only; audio never touches the server) --
