@@ -11,6 +11,61 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
     { urls: 'stun:stun1.l.google.com:19302' },
   ];
 
+  // Browsers default Opus to roughly phone quality (~24-32 kbps). Voice stays
+  // mono, so 64 kbps is plenty of headroom for clearly better speech without
+  // straining a phone's uplink.
+  const TARGET_BITRATE = 64000;
+
+  // Rewrite the Opus parameters the browser advertises. In-band FEC is the big
+  // one on mobile: it rebuilds short dropouts instead of leaving a gap. DTX
+  // stays on so a muted mic costs almost nothing.
+  function tuneOpus(sdp) {
+    try {
+      const payload = (sdp.match(/a=rtpmap:(\d+) opus\/48000/i) || [])[1];
+      if (!payload) return sdp;
+
+      const wanted = [
+        'stereo=0',
+        'sprop-stereo=0',
+        `maxaveragebitrate=${TARGET_BITRATE}`,
+        'maxplaybackrate=48000',
+        'useinbandfec=1',
+        'usedtx=1',
+      ];
+
+      const fmtpLine = new RegExp(`a=fmtp:${payload} (.*)`);
+      if (fmtpLine.test(sdp)) {
+        return sdp.replace(fmtpLine, (_m, existing) => {
+          const keep = existing
+            .split(';')
+            .map(x => x.trim())
+            .filter(x => x && !wanted.some(w => x.startsWith(w.split('=')[0] + '=')));
+          return `a=fmtp:${payload} ${keep.concat(wanted).join(';')}`;
+        });
+      }
+      return sdp.replace(
+        new RegExp(`(a=rtpmap:${payload} opus/48000[^\\r\\n]*)`),
+        `$1\r\na=fmtp:${payload} ${wanted.join(';')}`
+      );
+    } catch (_) {
+      return sdp; // never let tuning break the handshake
+    }
+  }
+
+  // The fmtp line is a hint; this sets the actual send bitrate.
+  async function raiseBitrate(pc) {
+    try {
+      for (const sender of pc.getSenders()) {
+        if (!sender.track || sender.track.kind !== 'audio') continue;
+        const params = sender.getParameters();
+        if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+        params.encodings[0].maxBitrate = TARGET_BITRATE;
+        params.encodings[0].priority = 'high';
+        await sender.setParameters(params);
+      }
+    } catch (_) { /* unsupported on some browsers; the fmtp hint still applies */ }
+  }
+
   const peers = new Map();   // peerId -> { pc, audio }
   let localStream = null;
   let selfId = null;
@@ -76,7 +131,9 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
       pc.onnegotiationneeded = async () => {
         try {
           const offer = await pc.createOffer();
+          offer.sdp = tuneOpus(offer.sdp);
           await pc.setLocalDescription(offer);
+          await raiseBitrate(pc);
           socket.emit('voice:signal', { to: id, data: { description: pc.localDescription } });
         } catch (_) { /* renegotiation races are retried by the next event */ }
       };
@@ -130,7 +187,9 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
         await pc.setRemoteDescription(data.description);
         if (data.description.type === 'offer') {
           const answer = await pc.createAnswer();
+          answer.sdp = tuneOpus(answer.sdp);
           await pc.setLocalDescription(answer);
+          await raiseBitrate(pc);
           socket.emit('voice:signal', { to: from, data: { description: pc.localDescription } });
         }
       } else if (data.candidate) {
@@ -149,7 +208,14 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus }) 
       }
       try {
         localStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+            sampleRate: 48000,      // capture at Opus's native rate, no resampling
+            sampleSize: 16,
+          },
           video: false,
         });
       } catch (_) {
