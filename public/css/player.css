@@ -458,3 +458,50 @@
 .solo .buzzer-view > .buzzer-main { flex: 1 1 auto; min-height: 0; }
 .solo .mini-scores { padding-top: .1rem; padding-bottom: .5rem; }
 .solo .team-banner { padding-bottom: .5rem; }
+
+/* ==================================================================
+   Second pass
+   ================================================================== */
+
+/* A dark, still disc looks broken. A faint ring shows the phone is live
+   and simply waiting for the host. */
+.solo .buzzer.waiting::after {
+  content: '';
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  animation: wait-ring 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes wait-ring {
+  0%, 100% { opacity: .15; transform: scale(1); }
+  50%      { opacity: .5;  transform: scale(1.03); }
+}
+
+/* Losing the connection is not the same as waiting — say so clearly. */
+.solo .buzzer-view.offline { background: rgba(239,68,68,.05); }
+.solo .buzzer-view.offline .buzzer {
+  background: radial-gradient(circle at 50% 32%, #241a1a, #181212 60%, #120d0d 100%);
+  color: var(--danger);
+  box-shadow: inset 0 8px 26px rgba(0,0,0,.65), 0 0 0 6px rgba(239,68,68,.1);
+}
+.solo .buzzer-view.offline .buzzer::after { animation: none; opacity: 0; }
+.solo .buzzer-view.offline .team-banner::before {
+  background: var(--danger); box-shadow: 0 0 14px var(--danger);
+}
+
+/* Tighten the footer: three stacked rows was a lot of vertical noise. */
+.solo .solo-foot { gap: .55rem; }
+.solo .voice-bar .btn { padding: .45rem .9rem; }
+
+/* Pressing should feel immediate even before the server answers. */
+.solo .buzzer.armed:active { transform: scale(.93); }
+
+/* Standing chips: the leader earns a touch more weight. */
+.solo .score-chip.me b { font-size: 1.05rem; }
+
+/* Name screen on a short phone should not need scrolling. */
+@media (max-height: 43rem) {
+  .solo .solo-name { gap: 1.1rem; padding-block: 1.5rem; }
+  .solo .screen-lead { font-size: 1.45rem; }
+}

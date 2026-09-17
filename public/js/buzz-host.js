@@ -6,6 +6,7 @@
   const copyLink = document.getElementById('copy-link');
   const shareQr = document.getElementById('share-qr');
   const winnerBox = document.getElementById('winner-box');
+  const stageCard = document.querySelector('.stage-card');
   const winnerName = document.getElementById('winner-name');
   const winnerMs = document.getElementById('winner-ms');
   const armBtn = document.getElementById('arm-btn');
@@ -392,6 +393,9 @@
     const winner = snap.winner;
     winnerBox.classList.toggle('idle', !winner);
     winnerBox.classList.toggle('hit', !!winner);
+    if (stageCard) {
+      stageCard.dataset.state = winner ? 'hit' : (snap.armed ? 'armed' : 'closed');
+    }
     if (winner) {
       winnerName.textContent = winner.teamName ? `${winner.name} — ${winner.teamName}` : winner.name;
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;

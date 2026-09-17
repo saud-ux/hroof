@@ -180,7 +180,7 @@
     const iPressed = last.presses.some(p => p.id === me.id);
     const iWon = winner && winner.id === me.id;
 
-    buzzer.classList.remove('armed', 'locked', 'pressed');
+    buzzer.classList.remove('armed', 'locked', 'pressed', 'waiting');
     buzzView.classList.remove('win');
     buzzer.disabled = true;
 
@@ -206,6 +206,7 @@
       }
     } else {
       winnerLine.textContent = '';
+      buzzer.classList.add('waiting');
       buzzerLabel.textContent = 'بانتظار الهوست';
     }
 
@@ -349,6 +350,10 @@
 
   socket.on('disconnect', () => {
     buzzer.disabled = true;
+    buzzer.classList.remove('armed', 'waiting');
+    buzzView.classList.add('offline');
     buzzerLabel.textContent = 'انقطع الاتصال…';
   });
+
+  socket.on('connect', () => { buzzView.classList.remove('offline'); });
 })();
