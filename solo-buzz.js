@@ -3,8 +3,11 @@
 // its own state. People open /buzz, type a name, and race to press.
 // The first press wins the round and locks everybody else out.
 
+const { ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom } = require('./questions-index');
+
 const MAX_PLAYERS = 200;
 const MAX_NAME = 24;
+const DIFFICULTIES = ['سهل', 'متوسط', 'صعب'];
 
 function createRoom() {
   return {
@@ -13,28 +16,60 @@ function createRoom() {
     armedAt: 0,       // ms timestamp the round opened
     players: [],      // [{ id, name }]  id === socket.id
     presses: [],      // [{ id, name, ms }] ordered by arrival; presses[0] is the winner
+    question: null,   // the question on screen, host-only
+    usedIds: new Set(),
   };
 }
 
-function attachSoloBuzzer(io) {
+function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
   const room = createRoom();
   const nsp = io.of('/solo');
+  const letterIndex = buildLetterIndex(questions);
+  const hasQuestions = questions.length > 0;
 
   const findPlayer = (id) => room.players.find(p => p.id === id);
   const winner = () => room.presses[0] || null;
 
-  function snapshot() {
-    return {
+  function snapshot(forHost) {
+    const base = {
       round: room.round,
       armed: room.armed,
       players: room.players.map(p => ({ id: p.id, name: p.name })),
       presses: room.presses.map(p => ({ id: p.id, name: p.name, ms: p.ms })),
       winner: winner(),
+      // players only learn THAT a question is up, never what it says
+      hasQuestion: !!room.question,
+    };
+    if (!forHost) return base;
+    return {
+      ...base,
+      question: room.question,
+      hasBank: hasQuestions,
+      letters: ARABIC_LETTERS,
+      letterCounts: lettersPayload(),
+      poolCounts: poolPayload(),
     };
   }
 
+  function lettersPayload() {
+    const out = {};
+    for (const d of DIFFICULTIES) out[d] = letterCounts(letterIndex, d, room.usedIds);
+    return out;
+  }
+
+  function poolPayload() {
+    const out = {};
+    for (const d of DIFFICULTIES) {
+      out[d] = (byDifficulty[d] || []).filter(q => !room.usedIds.has(q.id)).length;
+    }
+    return out;
+  }
+
   function broadcast() {
-    nsp.emit('solo:state', snapshot());
+    const forPlayers = snapshot(false);
+    for (const [, s] of nsp.sockets) {
+      s.emit('solo:state', s.data.soloHost ? snapshot(true) : forPlayers);
+    }
   }
 
   function cleanName(raw) {
@@ -53,7 +88,7 @@ function attachSoloBuzzer(io) {
   }
 
   nsp.on('connection', (socket) => {
-    socket.emit('solo:state', snapshot());
+    socket.emit('solo:state', snapshot(false));
 
     // ---- Player ------------------------------------------------------------
     socket.on('solo:join', ({ name } = {}) => {
@@ -93,11 +128,43 @@ function attachSoloBuzzer(io) {
     // ---- Host --------------------------------------------------------------
     socket.on('solo:hostRegister', () => {
       socket.data.soloHost = true;
-      socket.emit('solo:state', snapshot());
+      socket.emit('solo:state', snapshot(true));
+    });
+
+    // Pull a question from the bank and open the round with it in one step.
+    socket.on('solo:pickQuestion', ({ difficulty, letter } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (!DIFFICULTIES.includes(difficulty)) return;
+      if (letter && !ARABIC_LETTERS.includes(letter)) return;
+
+      const q = pickFrom({
+        index: letterIndex,
+        byDifficulty,
+        difficulty,
+        letter: letter || null,
+        usedIds: room.usedIds,
+      });
+      if (!q) { socket.emit('solo:poolEmpty', { difficulty, letter: letter || null }); return; }
+
+      room.question = q;
+      room.round += 1;
+      room.presses = [];
+      room.armed = true;
+      room.armedAt = Date.now();
+      broadcast();
+    });
+
+    socket.on('solo:clearQuestion', () => {
+      if (!socket.data.soloHost) return;
+      room.question = null;
+      room.armed = false;
+      room.presses = [];
+      broadcast();
     });
 
     socket.on('solo:arm', () => {
       if (!socket.data.soloHost) return;
+      room.question = null; // a bare round has no question attached
       room.armed = true;
       room.armedAt = Date.now();
       room.presses = [];
@@ -134,6 +201,8 @@ function attachSoloBuzzer(io) {
       room.presses = [];
       room.armed = false;
       room.round = 1;
+      room.question = null;
+      room.usedIds = new Set();
       nsp.emit('solo:cleared', {});
       broadcast();
     });

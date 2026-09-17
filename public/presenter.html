@@ -42,8 +42,16 @@
 
     <!-- View: difficulty picker (match started, no question) -->
     <section id="picker-view" class="picker-view" hidden>
-      <h2 id="picker-heading">اختر مستوى الصعوبة</h2>
+      <h2 id="picker-heading">اختر الحرف والصعوبة</h2>
       <p class="picker-hint" id="picker-hint" hidden>بانتظار انضمام الفريقين للمباراة</p>
+
+      <div class="letter-picker">
+        <p class="muted letter-caption">الحرف الذي تبدأ به الإجابة</p>
+        <div class="letter-strip" id="letter-strip">
+          <button class="letter-btn active" data-letter="">أي حرف</button>
+        </div>
+      </div>
+
       <div class="difficulty-grid">
         <button class="diff-btn easy" data-diff="سهل" disabled>
           <span class="diff-emoji">🟢</span>

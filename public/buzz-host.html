@@ -23,6 +23,28 @@
     </section>
 
     <section class="solo-stage">
+      <div class="solo-qpick" id="qpick">
+        <p class="muted letter-caption">الحرف الذي تبدأ به الإجابة</p>
+        <div class="letter-strip" id="letter-strip">
+          <button class="letter-btn active" data-letter="">أي حرف</button>
+        </div>
+        <div class="solo-diff-row" id="diff-row">
+          <button class="btn diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span></button>
+          <button class="btn diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span></button>
+          <button class="btn diff-pill hard" data-diff="صعب">صعب <span class="diff-count" data-count="صعب"></span></button>
+        </div>
+      </div>
+
+      <div class="solo-question" id="question-box" hidden>
+        <div class="solo-q-meta">
+          <span>الفئة: <b id="q-category">—</b></span>
+          <span>الصعوبة: <b id="q-difficulty">—</b></span>
+        </div>
+        <p class="solo-q-text" id="q-text">—</p>
+        <p class="solo-q-answer">الإجابة: <b id="q-answer">—</b></p>
+        <p class="solo-q-hint muted" id="q-hint"></p>
+      </div>
+
       <div id="winner-box" class="solo-winner-box idle">
         <span id="winner-name">لم يبدأ البزّ</span>
         <span id="winner-ms" class="solo-ms"></span>
@@ -32,6 +54,7 @@
         <button id="arm-btn" class="btn btn-primary btn-large">فتح البزّ</button>
         <button id="next-btn" class="btn btn-next" hidden>جولة جديدة</button>
         <button id="disarm-btn" class="btn btn-ghost">قفل</button>
+        <button id="clear-q-btn" class="btn btn-ghost btn-small" hidden>إخفاء السؤال</button>
         <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
       </div>
 

@@ -22,6 +22,7 @@
   // Difficulty picker
   const pickerHint = document.getElementById('picker-hint');
   const diffButtons = Array.from(document.querySelectorAll('.diff-btn'));
+  const letterStrip = document.getElementById('letter-strip');
   const countEls = {
     'سهل':   document.getElementById('count-easy'),
     'متوسط': document.getElementById('count-medium'),
@@ -57,6 +58,9 @@
     hasQuestion: false,
     picked: [],           // team ids selected for the next match (max 2)
     poolCounts: null,
+    letters: [],
+    letterCounts: null,
+    letter: '',        // '' = any letter
     audioUnlocked: false,
   };
 
@@ -189,13 +193,58 @@
     pickerHint.hidden = bothConnected;
   }
 
+  function remainingFor(difficulty) {
+    // With a letter selected the pool is the letter's bucket, not the whole level.
+    if (st.letter && st.letterCounts && st.letterCounts[difficulty]) {
+      return st.letterCounts[difficulty][st.letter] ?? 0;
+    }
+    return (st.poolCounts && st.poolCounts[difficulty]) ?? 0;
+  }
+
   function applyPools(counts) {
-    if (!counts) return;
-    st.poolCounts = counts;
+    if (counts) st.poolCounts = counts;
     for (const k of Object.keys(countEls)) {
       const el = countEls[k];
-      if (el) el.textContent = `${counts[k] ?? 0} متبقٍ`;
+      if (el) el.textContent = `${remainingFor(k)} متبقٍ`;
     }
+  }
+
+  function renderLetters() {
+    if (!letterStrip || !st.letters.length) return;
+    letterStrip.innerHTML = '';
+
+    const anyBtn = document.createElement('button');
+    anyBtn.className = 'letter-btn' + (st.letter === '' ? ' active' : '');
+    anyBtn.dataset.letter = '';
+    anyBtn.textContent = 'أي حرف';
+    letterStrip.appendChild(anyBtn);
+
+    st.letters.forEach(letter => {
+      const total = ['سهل', 'متوسط', 'صعب']
+        .reduce((sum, d) => sum + ((st.letterCounts && st.letterCounts[d] && st.letterCounts[d][letter]) || 0), 0);
+      const btn = document.createElement('button');
+      btn.className = 'letter-btn' + (st.letter === letter ? ' active' : '');
+      btn.dataset.letter = letter;
+      btn.textContent = letter;
+      btn.disabled = total === 0;
+      btn.title = total ? `${total} سؤال متبقٍ` : 'لا توجد أسئلة بهذا الحرف';
+      letterStrip.appendChild(btn);
+    });
+  }
+
+  function applyLetters(payload) {
+    if (!payload) return;
+    if (Array.isArray(payload.letters)) st.letters = payload.letters;
+    if (payload.letterCounts) st.letterCounts = payload.letterCounts;
+    // A letter that just ran dry falls back to "any letter".
+    if (st.letter && !remainingForAnyDifficulty(st.letter)) st.letter = '';
+    renderLetters();
+    applyPools(null);
+  }
+
+  function remainingForAnyDifficulty(letter) {
+    if (!st.letterCounts) return true;
+    return ['سهل', 'متوسط', 'صعب'].some(d => (st.letterCounts[d] || {})[letter] > 0);
   }
 
   function renderQuestion(q) {
@@ -292,9 +341,22 @@
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       unlockAudio();
-      socket.emit('presenter:pickDifficulty', { difficulty: btn.dataset.diff });
+      socket.emit('presenter:pickDifficulty', {
+        difficulty: btn.dataset.diff,
+        letter: st.letter || undefined,
+      });
     });
   });
+
+  if (letterStrip) {
+    letterStrip.addEventListener('click', (e) => {
+      const btn = e.target.closest('.letter-btn');
+      if (!btn || btn.disabled) return;
+      st.letter = btn.dataset.letter || '';
+      renderLetters();
+      applyPools(null);
+    });
+  }
 
   nextBtn.addEventListener('click', () => socket.emit('presenter:nextQuestion', {}));
 
@@ -346,6 +408,7 @@
     st.match = snap.match || null;
     st.status = snap.status;
     applyPools(snap.poolCounts);
+    applyLetters({ letters: snap.letters, letterCounts: snap.letterCounts });
     renderHeader();
     if (snap.currentQuestion) {
       renderQuestion(snap.currentQuestion);
@@ -422,7 +485,11 @@
 
   socket.on('session:reset', () => { window.location.href = '/host'; });
 
-  socket.on('pool:empty', ({ difficulty }) => {
-    showToast(`انتهت أسئلة الصعوبة ${difficulty}. اضغط 'جلسة جديدة' لإعادة التعيين.`);
+  socket.on('letters:update', (payload) => applyLetters(payload));
+
+  socket.on('pool:empty', ({ difficulty, letter }) => {
+    showToast(letter
+      ? `لا توجد أسئلة ${difficulty} تبدأ إجابتها بحرف ${letter}. جرّب حرفًا أو صعوبة أخرى.`
+      : `انتهت أسئلة الصعوبة ${difficulty}. اضغط 'جلسة جديدة' لإعادة التعيين.`);
   });
 })();

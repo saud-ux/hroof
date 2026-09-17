@@ -15,6 +15,19 @@
   const pressOrder = document.getElementById('press-order');
   const playersList = document.getElementById('players-list');
   const playersCount = document.getElementById('players-count');
+  const qpick = document.getElementById('qpick');
+  const letterStrip = document.getElementById('letter-strip');
+  const diffRow = document.getElementById('diff-row');
+  const questionBox = document.getElementById('question-box');
+  const qCategory = document.getElementById('q-category');
+  const qDifficulty = document.getElementById('q-difficulty');
+  const qText = document.getElementById('q-text');
+  const qAnswer = document.getElementById('q-answer');
+  const qHint = document.getElementById('q-hint');
+  const clearQBtn = document.getElementById('clear-q-btn');
+
+  const DIFFS = ['سهل', 'متوسط', 'صعب'];
+  const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
 
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
   const toArabic = (n) => String(n).replace(/\d/g, d => AR_DIGITS[Number(d)]);
@@ -36,6 +49,64 @@
 
   socket.on('connect', () => socket.emit('solo:hostRegister'));
 
+  function remainingFor(difficulty) {
+    if (st.letter && st.letterCounts && st.letterCounts[difficulty]) {
+      return st.letterCounts[difficulty][st.letter] ?? 0;
+    }
+    return (st.poolCounts && st.poolCounts[difficulty]) ?? 0;
+  }
+
+  function renderPicker() {
+    if (!letterStrip) return;
+    letterStrip.innerHTML = '';
+
+    const anyBtn = document.createElement('button');
+    anyBtn.className = 'letter-btn' + (st.letter === '' ? ' active' : '');
+    anyBtn.dataset.letter = '';
+    anyBtn.textContent = 'أي حرف';
+    letterStrip.appendChild(anyBtn);
+
+    st.letters.forEach(letter => {
+      const total = DIFFS.reduce(
+        (sum, d) => sum + ((st.letterCounts && st.letterCounts[d] && st.letterCounts[d][letter]) || 0), 0);
+      const btn = document.createElement('button');
+      btn.className = 'letter-btn' + (st.letter === letter ? ' active' : '');
+      btn.dataset.letter = letter;
+      btn.textContent = letter;
+      btn.disabled = total === 0;
+      btn.title = total ? `${total} سؤال متبقٍ` : 'لا توجد أسئلة بهذا الحرف';
+      letterStrip.appendChild(btn);
+    });
+
+    diffRow.querySelectorAll('.diff-pill').forEach(btn => {
+      const left = remainingFor(btn.dataset.diff);
+      const el = btn.querySelector('.diff-count');
+      if (el) el.textContent = `(${toArabic(left)})`;
+      btn.disabled = left === 0;
+    });
+  }
+
+  letterStrip.addEventListener('click', (e) => {
+    const btn = e.target.closest('.letter-btn');
+    if (!btn || btn.disabled) return;
+    st.letter = btn.dataset.letter || '';
+    renderPicker();
+  });
+
+  diffRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.diff-pill');
+    if (!btn || btn.disabled) return;
+    socket.emit('solo:pickQuestion', { difficulty: btn.dataset.diff, letter: st.letter || undefined });
+  });
+
+  clearQBtn.addEventListener('click', () => socket.emit('solo:clearQuestion'));
+
+  socket.on('solo:poolEmpty', ({ difficulty, letter }) => {
+    alert(letter
+      ? `لا توجد أسئلة ${difficulty} تبدأ إجابتها بحرف ${letter}.`
+      : `انتهت أسئلة الصعوبة ${difficulty}.`);
+  });
+
   armBtn.addEventListener('click', () => socket.emit('solo:arm'));
   nextBtn.addEventListener('click', () => socket.emit('solo:nextRound'));
   disarmBtn.addEventListener('click', () => socket.emit('solo:disarm'));
@@ -45,6 +116,29 @@
 
   socket.on('solo:state', (snap) => {
     roundLabel.textContent = `جولة ${toArabic(snap.round)}`;
+
+    // The very first state arrives before hostRegister completes and carries no
+    // bank, so only hide the picker once we know there is nothing to pick from.
+    if (snap.hasBank) {
+      if (Array.isArray(snap.letters)) st.letters = snap.letters;
+      if (snap.letterCounts) st.letterCounts = snap.letterCounts;
+      if (snap.poolCounts) st.poolCounts = snap.poolCounts;
+      if (qpick) qpick.hidden = false;
+      renderPicker();
+    } else if (qpick && snap.hasBank === false) {
+      qpick.hidden = true;
+    }
+
+    const q = snap.question;
+    questionBox.hidden = !q;
+    clearQBtn.hidden = !q;
+    if (q) {
+      qCategory.textContent = q.category || '—';
+      qDifficulty.textContent = q.difficulty || '—';
+      qText.textContent = q.text;
+      qAnswer.textContent = q.answer || '—';
+      qHint.textContent = q.hint ? `تلميح: ${q.hint}` : '';
+    }
 
     const winner = snap.winner;
     winnerBox.classList.toggle('idle', !winner);

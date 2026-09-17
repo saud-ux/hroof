@@ -6,6 +6,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
 const { attachSoloBuzzer } = require('./solo-buzz');
+const { ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom } = require('./questions-index');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -47,6 +48,9 @@ try {
 }
 const byDifficulty = { 'سهل': [], 'متوسط': [], 'صعب': [] };
 for (const q of questions) if (byDifficulty[q.difficulty]) byDifficulty[q.difficulty].push(q);
+// difficulty -> letter -> questions whose answer starts with that letter
+const letterIndex = buildLetterIndex(questions);
+const DIFFICULTIES = ['سهل', 'متوسط', 'صعب'];
 
 // ---- Game state --------------------------------------------------------------
 // Roster: teams that participate in this session's event.
@@ -103,13 +107,22 @@ function bothMatchTeamsConnected() {
   });
 }
 
-function pickQuestion(difficulty) {
-  const bucket = byDifficulty[difficulty] || [];
-  const pool = bucket.filter(q => !state.usedQuestionIds.has(q.id));
-  if (pool.length === 0) return null;
-  const q = pool[Math.floor(Math.random() * pool.length)];
-  state.usedQuestionIds.add(q.id);
-  return q;
+function pickQuestion(difficulty, letter) {
+  return pickFrom({
+    index: letterIndex,
+    byDifficulty,
+    difficulty,
+    letter: letter || null,
+    usedIds: state.usedQuestionIds,
+  });
+}
+
+// Remaining questions per letter for every difficulty, so the presenter can grey
+// out letters that have nothing left.
+function letterCountsPayload(usedIds) {
+  const out = {};
+  for (const d of DIFFICULTIES) out[d] = letterCounts(letterIndex, d, usedIds);
+  return out;
 }
 
 function clearTimer() {
@@ -203,6 +216,8 @@ function fullPresenterSnapshot() {
       'صعب': byDifficulty['صعب'].filter(q => !state.usedQuestionIds.has(q.id)).length,
     },
     limits: { min: MIN_TEAMS, max: MAX_TEAMS },
+    letters: ARABIC_LETTERS,
+    letterCounts: letterCountsPayload(state.usedQuestionIds),
   };
 }
 
@@ -376,13 +391,14 @@ io.on('connection', (socket) => {
   });
 
   // ---- Pick difficulty -----------------------------------------------------
-  socket.on('presenter:pickDifficulty', ({ difficulty } = {}) => {
-    if (!['سهل', 'متوسط', 'صعب'].includes(difficulty)) return;
+  socket.on('presenter:pickDifficulty', ({ difficulty, letter } = {}) => {
+    if (!DIFFICULTIES.includes(difficulty)) return;
+    if (letter && !ARABIC_LETTERS.includes(letter)) return;
     if (state.status !== 'waiting') return;
     if (!bothMatchTeamsConnected()) return;
 
-    const q = pickQuestion(difficulty);
-    if (!q) { socket.emit('pool:empty', { difficulty }); return; }
+    const q = pickQuestion(difficulty, letter);
+    if (!q) { socket.emit('pool:empty', { difficulty, letter: letter || null }); return; }
     state.currentQuestion = q;
     state.buzzWinner = null;
     state.triedTeamIds = [];
@@ -399,6 +415,7 @@ io.on('connection', (socket) => {
       }
       // spectator team phones (registered but not in this match) get nothing
     }
+    emitToPresenters('letters:update', { letterCounts: letterCountsPayload(state.usedQuestionIds) });
     broadcastStateLite();
   });
 
@@ -468,7 +485,7 @@ io.on('connection', (socket) => {
   });
 });
 
-attachSoloBuzzer(io);
+attachSoloBuzzer(io, questions, byDifficulty);
 
 // ---- Boot --------------------------------------------------------------------
 httpServer.listen(PORT, HOST, () => {
