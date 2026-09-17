@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#08090c" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
   <title>الزر</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/player.css" />
@@ -24,7 +30,8 @@
     <p class="center solo-chosen-team" id="chosen-team" hidden></p>
 
     <form id="name-form" class="solo-form" autocomplete="off">
-      <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required />
+      <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required
+        autocomplete="nickname" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="go" />
 
       <div class="solo-colors" id="color-row" hidden>
         <span class="screen-sub">اختر لونك</span>
