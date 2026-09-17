@@ -172,8 +172,9 @@
       voiceAllBtn.textContent = open ? '🔇 أغلق مايك الجميع' : '🎙 افتح المايك للجميع';
       renderPlayers(); // mic buttons follow who may speak right now
     },
-    onLevel: (v) => {
+    onLevel: (v, open) => {
       micMeter.hidden = !voice.isJoined();
+      micMeter.dataset.open = open ? '1' : '0';
       micLevel.style.width = `${Math.round(v * 100)}%`;
     },
   });

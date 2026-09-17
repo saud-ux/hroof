@@ -195,8 +195,9 @@
     onRoom: () => {
       voiceBtn.textContent = voice.isJoined() ? '🔇 خروج من الصوت' : '🎙 انضم للصوت';
     },
-    onLevel: (v) => {
+    onLevel: (v, open) => {
       micMeter.hidden = !voice.isJoined();
+      micMeter.dataset.open = open ? '1' : '0';
       micLevel.style.width = `${Math.round(v * 100)}%`;
     },
   });

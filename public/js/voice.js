@@ -93,6 +93,18 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
   let joined = false;
   let levelCtx = null;
   let levelTimer = null;
+  let rawStream = null;   // straight from the mic, kept only so we can stop it
+  let chain = null;       // the processing graph between the mic and the wire
+
+  // Gate tuning. A fixed threshold is the wrong tool here: it either lets a noisy
+  // room through or cuts off someone softly spoken. Instead we track each
+  // device's own noise floor and open the gate relative to it, with absolute
+  // floors so a silent room cannot drive the threshold to zero.
+  const MIN_OPEN = 0.012;    // never demand more than this to be heard
+  const MIN_CLOSE = 0.008;
+  const OPEN_OVER_FLOOR = 3.0;
+  const CLOSE_OVER_FLOOR = 2.0;
+  const HOLD_MS = 450;       // keeps the gate open through pauses inside a sentence
 
   const amSpeaker = () => room.speakers.includes(selfId);
   const isSpeaker = (id) => room.speakers.includes(id);
@@ -120,6 +132,94 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
       } catch (_) { /* older browsers fall back to the enabled flag above */ }
     }
     status(on ? 'مايكك مفتوح' : 'مايكك مكتوم', on ? 'live' : 'muted');
+  }
+
+  // Clean the microphone up before it ever reaches the network:
+  //   highpass  - drops rumble, handling noise and desk thumps
+  //   compressor- evens out someone far from the mic against someone on top of it
+  //   gate      - closes the mic between sentences so six open mics do not add up
+  //               to a wall of room noise
+  function buildChain(stream) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    try {
+      const ctx = new Ctx();
+      const src = ctx.createMediaStreamSource(stream);
+
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 90;
+
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -28;
+      comp.knee.value = 24;
+      comp.ratio.value = 3;
+      comp.attack.value = 0.005;
+      comp.release.value = 0.2;
+
+      const gate = ctx.createGain();
+      gate.gain.value = 0;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+
+      const dest = ctx.createMediaStreamDestination();
+      src.connect(highpass);
+      highpass.connect(comp);
+      comp.connect(analyser);   // the gate decides from the cleaned signal
+      comp.connect(gate);
+      gate.connect(dest);
+
+      return {
+        ctx, gate, analyser, stream: dest.stream,
+        open: false, lastLoud: 0,
+        floor: 0.02,   // starting guess, corrected within a second of real audio
+      };
+    } catch (_) {
+      return null; // fall back to the raw microphone
+    }
+  }
+
+  function runGate() {
+    if (!chain) return;
+    const buf = new Uint8Array(chain.analyser.frequencyBinCount);
+    const tick = () => {
+      if (!joined || !chain) return;
+      chain.analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const v = (buf[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / buf.length);
+      const now = performance.now();
+      const speaking = amSpeaker();
+
+      // Follow the quietest recent level down quickly and let it drift back up
+      // slowly, so the floor settles on room tone rather than on speech.
+      chain.floor = rms < chain.floor
+        ? chain.floor * 0.9 + rms * 0.1
+        : Math.min(chain.floor * 1.0008, 0.05);
+
+      const openAt = Math.max(MIN_OPEN, chain.floor * OPEN_OVER_FLOOR);
+      const closeAt = Math.max(MIN_CLOSE, chain.floor * CLOSE_OVER_FLOOR);
+
+      if (speaking && rms > openAt) { chain.lastLoud = now; }
+      const shouldOpen = speaking && (rms > openAt ||
+        (rms > closeAt && now - chain.lastLoud < HOLD_MS) ||
+        now - chain.lastLoud < HOLD_MS);
+
+      if (shouldOpen !== chain.open) {
+        chain.open = shouldOpen;
+        const t = chain.ctx.currentTime;
+        chain.gate.gain.cancelScheduledValues(t);
+        chain.gate.gain.setTargetAtTime(shouldOpen ? 1 : 0, t, shouldOpen ? 0.008 : 0.08);
+      }
+
+      if (onLevel) onLevel(speaking ? Math.min(1, rms / 0.15) : 0, shouldOpen);
+      levelTimer = requestAnimationFrame(tick);
+    };
+    tick();
   }
 
   function attachAudio(id) {
@@ -238,35 +338,10 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
     } catch (_) { /* a stale candidate before the description is safe to drop */ }
   });
 
-  // A small running level so someone can see their mic is picking up at all,
-  // instead of guessing why nobody hears them.
-  function startLevelMeter() {
-    if (!onLevel || !localStream) return;
-    try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
-      const src = ctx.createMediaStreamSource(localStream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      src.connect(analyser);
-      const buf = new Uint8Array(analyser.frequencyBinCount);
-      levelCtx = ctx;
-      const tick = () => {
-        if (!joined) { try { ctx.close(); } catch (_) {} return; }
-        analyser.getByteTimeDomainData(buf);
-        let peak = 0;
-        for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
-        onLevel(amSpeaker() ? Math.min(1, peak / 60) : 0);
-        levelTimer = requestAnimationFrame(tick);
-      };
-      tick();
-    } catch (_) { /* the meter is a nicety, never a blocker */ }
-  }
-
-  function stopLevelMeter() {
+  function stopProcessing() {
     if (levelTimer) cancelAnimationFrame(levelTimer);
     levelTimer = null;
+    if (chain) { try { chain.ctx.close(); } catch (_) {} chain = null; }
     if (levelCtx) { try { levelCtx.close(); } catch (_) {} levelCtx = null; }
     if (onLevel) onLevel(0);
   }
@@ -280,24 +355,35 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
         return false;
       }
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({
+        rawStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
+            // Chrome's stronger speech isolation where it exists; ignored elsewhere.
+            voiceIsolation: true,
             channelCount: 1,
             sampleRate: 48000,      // capture at Opus's native rate, no resampling
             sampleSize: 16,
           },
           video: false,
         });
+
+        chain = buildChain(rawStream);
+        if (chain) {
+          // The join tap is our user gesture, so the context may start suspended.
+          if (chain.ctx.state === 'suspended') { try { await chain.ctx.resume(); } catch (_) {} }
+          localStream = chain.stream;
+        } else {
+          localStream = rawStream;
+        }
       } catch (_) {
         status('لم تسمح باستخدام المايك', 'error');
         return false;
       }
       joined = true;
       applyMic();
-      startLevelMeter();
+      runGate();
       socket.emit('voice:join');
       status(isHost ? 'مايكك مفتوح' : 'مايكك مكتوم', isHost ? 'live' : 'muted');
       return true;
@@ -306,11 +392,13 @@ window.createVoice = function createVoice({ socket, isHost, onRoom, onStatus, on
     leave() {
       if (!joined) return;
       joined = false;
-      stopLevelMeter();
+      stopProcessing();
       socket.emit('voice:leave');
       for (const id of [...peers.keys()]) closePeer(id);
-      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (rawStream) rawStream.getTracks().forEach(t => t.stop());
+      if (localStream && localStream !== rawStream) localStream.getTracks().forEach(t => t.stop());
       localStream = null;
+      rawStream = null;
       status('خارج الصوت', 'off');
     },
 
