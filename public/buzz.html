@@ -1,0 +1,39 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>بزّر</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="team solo">
+  <!-- 1) Name entry -->
+  <section id="name-view" class="solo-name">
+    <h1 class="app-title small">بزّر</h1>
+    <p class="muted center">اكتب اسمك وادخل</p>
+    <form id="name-form" class="solo-form" autocomplete="off">
+      <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required />
+      <button class="btn btn-primary btn-large" type="submit">دخول</button>
+    </form>
+    <p class="solo-error" id="name-error" hidden></p>
+    <p class="muted center solo-count" id="lobby-count"></p>
+  </section>
+
+  <!-- 2) Buzzer -->
+  <section id="buzz-view" class="buzzer-view" hidden>
+    <header class="team-banner" id="me-banner"><span id="me-name">—</span></header>
+    <main class="buzzer-main">
+      <button id="buzzer" class="buzzer" aria-label="زر البز">
+        <span id="buzzer-label">بانتظار المقدم</span>
+      </button>
+    </main>
+    <footer class="solo-foot">
+      <span id="winner-line" class="solo-winner-line"></span>
+      <span id="players-line" class="muted"></span>
+    </footer>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/buzz.js"></script>
+</body>
+</html>

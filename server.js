@@ -5,8 +5,13 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
+const { attachSoloBuzzer } = require('./solo-buzz');
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
+// Public base URL when the app is hosted online (tunnel / cloud). Example:
+//   PUBLIC_URL=https://buzzer.example.com npm start
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 const PHASE1_SECONDS = 5;
 const PHASE2_SECONDS = 20;
 const TICK_MS = 250;
@@ -25,6 +30,7 @@ const DEFAULT_PALETTE = [
 ];
 
 const app = express();
+app.set('trust proxy', true);
 app.use(express.json({ limit: '32kb' }));
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
@@ -218,6 +224,8 @@ app.get(['/host', '/mo', '/mqdm'], (_req, res) => res.sendFile(path.join(__dirna
 app.get('/setup', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'setup.html')));
 app.get('/presenter', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'presenter.html')));
 app.get('/questions', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'questions.html')));
+app.get(['/buzz', '/bz'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'buzz.html')));
+app.get(['/buzz/host', '/bzhost'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'buzz-host.html')));
 
 app.get('/api/questions', (_req, res) => {
   res.json({
@@ -231,9 +239,28 @@ app.get('/api/questions', (_req, res) => {
   });
 });
 
+// Base URL to hand out to participants. Uses PUBLIC_URL when hosted online,
+// then the request's own host (tunnel / reverse proxy), then the LAN IP.
+function baseUrl(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const host = req && req.get && req.get('host');
+  if (host && !/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|$)/.test(host)) {
+    const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+    return `${proto}://${host}`;
+  }
+  return `http://${getLanIp()}:${PORT}`;
+}
+
 app.get('/lan-ip', (_req, res) => res.json({ ip: getLanIp(), port: PORT }));
-app.get('/qr', async (_req, res) => {
-  const url = `http://${getLanIp()}:${PORT}/team`;
+app.get('/links', (req, res) => {
+  const base = baseUrl(req);
+  res.json({ base, team: `${base}/team`, buzz: `${base}/buzz`, buzzHost: `${base}/buzz/host` });
+});
+app.get('/qr', async (req, res) => {
+  const wanted = typeof req.query.path === 'string' && req.query.path.startsWith('/')
+    ? req.query.path
+    : '/team';
+  const url = `${baseUrl(req)}${wanted}`;
   try {
     const png = await QRCode.toBuffer(url, { width: 512, margin: 1, errorCorrectionLevel: 'M' });
     res.type('png').send(png);
@@ -441,12 +468,16 @@ io.on('connection', (socket) => {
   });
 });
 
+attachSoloBuzzer(io);
+
 // ---- Boot --------------------------------------------------------------------
-httpServer.listen(PORT, '0.0.0.0', () => {
-  const ip = getLanIp();
+httpServer.listen(PORT, HOST, () => {
+  const base = PUBLIC_URL || `http://${getLanIp()}:${PORT}`;
   console.log('Cell Buzzer running:');
   console.log(`  Presenter (private) : http://localhost:${PORT}/host`);
-  console.log(`                        http://${ip}:${PORT}/host`);
-  console.log(`  Teams (share)       : http://${ip}:${PORT}/team`);
+  console.log(`                        ${base}/host`);
+  console.log(`  Teams (share)       : ${base}/team`);
+  console.log(`  Solo buzzer (share) : ${base}/buzz`);
+  console.log(`  Solo buzzer host    : ${base}/buzz/host`);
   console.log(`  Loaded ${questions.length} questions.`);
 });

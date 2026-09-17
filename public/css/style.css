@@ -571,3 +571,78 @@ button { font-family: inherit; }
   background: rgba(0,0,0,0.15);
   color: #0a0a0a;
 }
+
+/* ---- Standalone buzzer (/buzz, /buzz/host) --------------------------------- */
+/* The solo room has no team colours, so it uses one accent for banner + win state. */
+body.solo { --team-current: #22c55e; }
+.solo-name {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 1rem; padding: 1.5rem;
+}
+.solo-form { display: flex; flex-direction: column; gap: .9rem; max-width: 22rem; margin: 0 auto; width: 100%; }
+.solo-input {
+  font-family: inherit; font-size: 1.4rem; font-weight: 700; text-align: center;
+  padding: .9rem 1rem; border-radius: 1rem;
+  border: 2px solid var(--border, #3f3f46);
+  background: var(--surface-2, #27272a); color: var(--text, #fafafa);
+}
+.solo-input:focus { outline: none; border-color: var(--success, #22c55e); }
+.solo-error { color: var(--danger, #ef4444); text-align: center; font-weight: 700; }
+.solo-count { margin-top: .5rem; }
+
+.solo .buzzer.armed { animation: pulse 1.1s ease-in-out infinite; background: var(--success, #22c55e); color: #0a0a0a; }
+.solo-foot {
+  padding: 1rem; text-align: center;
+  display: flex; flex-direction: column; gap: .25rem;
+}
+.solo-winner-line { font-weight: 900; font-size: 1.1rem; }
+
+.solo-host-main {
+  display: grid; gap: 1.25rem; padding: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 60rem; margin: 0 auto;
+}
+@media (min-width: 62rem) {
+  .solo-host-main { grid-template-columns: 18rem minmax(0, 1fr) 14rem; align-items: start; }
+}
+.solo-share, .solo-players, .solo-stage {
+  background: var(--surface, #18181b); border: 1px solid var(--border, #3f3f46);
+  border-radius: 1rem; padding: 1rem;
+}
+.solo-link-row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.solo-link-row code {
+  direction: ltr; font-size: .95rem; word-break: break-all;
+  background: var(--surface-2, #27272a); padding: .35rem .6rem; border-radius: .5rem;
+}
+.solo-qr { width: 100%; max-width: 15rem; margin-top: .75rem; border-radius: .75rem; background: #fff; padding: .5rem; }
+
+.solo-winner-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 9rem; border-radius: 1rem; padding: 1rem;
+  font-size: clamp(1.6rem, 5vw, 3rem); font-weight: 900; text-align: center;
+}
+.solo-winner-box.idle { background: var(--surface-2, #27272a); color: var(--muted, #a1a1aa); }
+.solo-winner-box.hit  { background: var(--success, #22c55e); color: #0a0a0a; }
+.solo-ms { font-size: 1rem; font-weight: 700; opacity: .8; }
+
+.solo-controls { display: flex; gap: .6rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+.solo-order { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; counter-reset: rank; }
+.solo-order li {
+  counter-increment: rank;
+  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+  background: var(--surface-2, #27272a); border-radius: .6rem; padding: .5rem .75rem;
+}
+.solo-order li::before { content: counter(rank); font-weight: 900; opacity: .5; margin-inline-end: .5rem; }
+.solo-order li.first { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.4); }
+
+.solo-player-list { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.solo-player-list li {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface-2, #27272a); border-radius: .6rem; padding: .45rem .7rem;
+}
+.solo-player-list li.pressed { border: 1px solid rgba(34,197,94,.4); }
+.solo-kick {
+  background: none; border: none; color: var(--danger, #ef4444);
+  font-size: 1.1rem; font-weight: 900; cursor: pointer; font-family: inherit;
+}

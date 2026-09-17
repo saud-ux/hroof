@@ -1,0 +1,50 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بزّر — شاشة المقدم</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="presenter solo-host">
+  <header class="topbar">
+    <h1 class="app-title small">بزّر — شاشة المقدم</h1>
+    <span class="muted" id="round-label">جولة ١</span>
+  </header>
+
+  <main class="solo-host-main">
+    <section class="solo-share">
+      <p class="muted">رابط المشاركين</p>
+      <div class="solo-link-row">
+        <code id="share-link">…</code>
+        <button id="copy-link" class="btn btn-ghost btn-small">نسخ</button>
+      </div>
+      <img id="share-qr" class="solo-qr" alt="QR" src="/qr?path=/buzz" />
+    </section>
+
+    <section class="solo-stage">
+      <div id="winner-box" class="solo-winner-box idle">
+        <span id="winner-name">لم يبدأ البزّ</span>
+        <span id="winner-ms" class="solo-ms"></span>
+      </div>
+
+      <div class="solo-controls">
+        <button id="arm-btn" class="btn btn-primary btn-large">فتح البزّ</button>
+        <button id="next-btn" class="btn btn-next" hidden>جولة جديدة</button>
+        <button id="disarm-btn" class="btn btn-ghost">قفل</button>
+        <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
+      </div>
+
+      <ol id="press-order" class="solo-order"></ol>
+    </section>
+
+    <section class="solo-players">
+      <p class="muted">المشاركون (<span id="players-count">0</span>)</p>
+      <ul id="players-list" class="solo-player-list"></ul>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/buzz-host.js"></script>
+</body>
+</html>
