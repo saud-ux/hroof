@@ -29,6 +29,7 @@
   const voiceBtn = document.getElementById('voice-btn');
   const voiceStatus = document.getElementById('voice-status');
   const voiceMode = document.getElementById('voice-mode');
+  const voiceAllBtn = document.getElementById('voice-all-btn');
 
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
@@ -66,6 +67,9 @@
     onRoom: (room) => {
       voiceRoom = room;
       voiceMode.value = room.mode;
+      const open = room.mode === 'open';
+      voiceAllBtn.classList.toggle('on', open);
+      voiceAllBtn.textContent = open ? '🔇 أغلق مايك الجميع' : '🎙 افتح المايك للجميع';
       renderPlayers(); // mic buttons follow who may speak right now
     },
   });
@@ -84,6 +88,12 @@
 
   voiceMode.addEventListener('change', () => {
     socket.emit('voice:setMode', { mode: voiceMode.value });
+  });
+
+  // One tap to hand every phone an open mic, and another to take it back.
+  voiceAllBtn.addEventListener('click', () => {
+    const next = voiceRoom.mode === 'open' ? 'winner' : 'open';
+    socket.emit('voice:setMode', { mode: next });
   });
 
   function remainingFor(difficulty) {
