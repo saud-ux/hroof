@@ -74,10 +74,10 @@
       const count = last.players.filter(p => p.teamId === t.id).length;
       const btn = document.createElement('button');
       btn.className = 'team-card';
-      btn.style.borderColor = t.color;
+      btn.style.setProperty('--tint', t.color);
       btn.innerHTML = `
         <span class="team-card-name">${t.name}</span>
-        <span class="team-card-status">${count ? count + ' لاعب' : ''}</span>
+        <span class="team-card-status">${count ? `${toArabic(count)} لاعب` : 'لا أحد بعد'}</span>
       `;
       btn.addEventListener('click', () => {
         pickedTeamId = t.id;
@@ -94,8 +94,7 @@
       const t = last.teams.find(x => x.id === pickedTeamId);
       chosenTeam.hidden = !t;
       if (t) {
-        chosenTeam.textContent = `فريقك: ${t.name}`;
-        chosenTeam.style.color = t.color;
+        chosenTeam.textContent = t.name;
         setButtonColor(t.color);
       }
       colorRow.hidden = true;        // the team's colour wins

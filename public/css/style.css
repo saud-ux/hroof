@@ -573,8 +573,8 @@ button { font-family: inherit; }
 }
 
 /* ---- Standalone buzzer (/buzz, /buzz/host) --------------------------------- */
-/* The solo room has no team colours, so it uses one accent for banner + win state. */
-body.solo { --team-current: #22c55e; }
+/* The player page sets --team-current on :root from the team's colour;
+   player.css supplies the fallback, so nothing is pinned here. */
 .solo-name {
   min-height: 100vh; min-height: 100dvh;
   display: flex; flex-direction: column; justify-content: center;

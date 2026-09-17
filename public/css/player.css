@@ -1,0 +1,318 @@
+/* ==================================================================
+   شاشة اللاعب — تصميم مخصّص
+   Loaded after style.css and scoped to .solo, so the presenter and the
+   Cell game keep their own look untouched.
+   ================================================================== */
+
+.solo {
+  --accent: var(--team-current, #22c55e);
+  --ink: #fafafa;
+  background:
+    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 110%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 55%),
+    #08090c;
+  color: var(--ink);
+  min-height: 100vh; min-height: 100dvh;
+  transition: background 0.5s ease;
+}
+
+/* Browsers without color-mix still get a clean dark page. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .solo { background: #08090c; }
+}
+
+/* ---- Shared shell -------------------------------------------------- */
+.solo .solo-name {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1.25rem calc(2rem + env(safe-area-inset-bottom));
+  max-width: 30rem; margin: 0 auto; width: 100%;
+}
+
+.solo .app-title.small {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .22em;
+  text-align: center;
+  margin: 0;
+  color: var(--accent);
+  text-transform: none;
+  opacity: .95;
+}
+
+.solo .screen-lead {
+  text-align: center;
+  font-size: 1.65rem;
+  font-weight: 900;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.solo .screen-sub {
+  text-align: center;
+  color: #8b8f9a;
+  font-size: .95rem;
+  margin: -0.9rem 0 0;
+}
+
+/* ---- Team picker --------------------------------------------------- */
+.solo .team-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: .85rem;
+}
+
+.solo .team-card {
+  --card: var(--tint, #22c55e);
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .35rem;
+  padding: 1.15rem 1.1rem;
+  border-radius: 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--card) 45%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--card) 26%, transparent), transparent 70%),
+    rgba(255,255,255,.03);
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: start;
+  overflow: hidden;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.solo .team-card::after {
+  content: '';
+  position: absolute; inset-inline-start: 0; inset-block: 0;
+  width: 4px; background: var(--card);
+}
+.solo .team-card:active { transform: scale(.97); }
+.solo .team-card:hover { border-color: var(--card); }
+
+.solo .team-card-name { font-size: 1.2rem; font-weight: 900; }
+.solo .team-card-status { font-size: .8rem; color: #8b8f9a; }
+
+/* ---- Name entry ---------------------------------------------------- */
+.solo .solo-form { display: flex; flex-direction: column; gap: .9rem; width: 100%; }
+
+.solo .solo-input {
+  font-family: inherit; font-size: 1.25rem; font-weight: 800;
+  text-align: center;
+  padding: 1rem 1rem;
+  border-radius: 1rem;
+  color: var(--ink);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  transition: border-color .15s ease, background .15s ease;
+}
+.solo .solo-input::placeholder { color: #6b7280; font-weight: 600; }
+.solo .solo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255,255,255,.07);
+}
+
+.solo .btn-primary.btn-large {
+  font-family: inherit;
+  font-size: 1.15rem; font-weight: 900;
+  padding: 1rem;
+  border: none; border-radius: 1rem;
+  background: var(--accent); color: #07080a;
+  cursor: pointer;
+  transition: transform .1s ease, filter .15s ease;
+}
+.solo .btn-primary.btn-large:active { transform: scale(.98); filter: brightness(.95); }
+
+.solo .solo-chosen-team {
+  display: inline-flex; align-items: center; gap: .45rem;
+  align-self: center;
+  padding: .4rem .9rem;
+  border-radius: 999px;
+  font-size: .9rem; font-weight: 800;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  margin: 0;
+}
+
+.solo .color-swatches { gap: .55rem; }
+.solo .color-swatch {
+  width: 2.4rem; height: 2.4rem; border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  transition: transform .12s ease, border-color .12s ease;
+}
+.solo .color-swatch.active { border-color: var(--ink); transform: scale(1.12); }
+
+.solo .solo-error {
+  text-align: center; font-weight: 800; color: #f87171;
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: .75rem; padding: .6rem;
+  margin: 0;
+}
+
+/* ---- Buzzer screen -------------------------------------------------- */
+.solo .buzzer-view {
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+}
+
+.solo .team-banner {
+  padding: 1rem 1.25rem calc(1rem);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  display: flex; align-items: center; justify-content: center; gap: .55rem;
+  font-size: 1.05rem; font-weight: 900;
+}
+.solo .team-banner::before {
+  content: '';
+  width: .6rem; height: .6rem; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  flex: none;
+}
+
+.solo .buzzer-main {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1.25rem;
+  padding: 1rem;
+}
+
+/* The button itself: a dark disc that lights up only when it is live. */
+.solo .buzzer {
+  position: relative;
+  width: min(74vw, 58vh); height: min(74vw, 58vh);
+  border-radius: 50%;
+  border: none;
+  font-family: inherit;
+  font-size: clamp(1.6rem, 7vw, 3.2rem);
+  font-weight: 900;
+  cursor: pointer;
+  background: #16181d;
+  color: #4b5563;
+  box-shadow:
+    inset 0 -10px 24px rgba(0,0,0,.55),
+    inset 0 2px 0 rgba(255,255,255,.05),
+    0 18px 45px rgba(0,0,0,.5);
+  transition: transform .08s ease, background .25s ease, color .25s ease, box-shadow .25s ease;
+}
+
+.solo .buzzer.armed {
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 92%, white), var(--accent) 70%);
+  color: #07080a;
+  box-shadow:
+    inset 0 -12px 26px rgba(0,0,0,.28),
+    0 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent),
+    0 0 60px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 18px 45px rgba(0,0,0,.45);
+  animation: buzz-breathe 1.6s ease-in-out infinite;
+}
+@keyframes buzz-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+
+.solo .buzzer.pressed { transform: scale(.94); animation: none; }
+
+.solo .buzzer.locked {
+  background: #2a1416;
+  color: #7f6063;
+  box-shadow: inset 0 6px 22px rgba(0,0,0,.6);
+  animation: none;
+}
+
+/* Winner takeover */
+.solo .buzzer-view.win { background: transparent; }
+.solo .buzzer-view.win .buzzer {
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 95%, white), var(--accent) 72%);
+  color: #07080a;
+  border: none;
+  animation: win-pop .45s cubic-bezier(.2,1.4,.4,1);
+  box-shadow:
+    0 0 0 14px color-mix(in srgb, var(--accent) 16%, transparent),
+    0 0 90px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+@keyframes win-pop {
+  0%   { transform: scale(.85); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.solo .buzzer-view.win .team-banner { background: transparent; color: var(--ink); }
+
+/* ---- Countdown ------------------------------------------------------ */
+.solo .timer-display.big {
+  font-size: clamp(3.2rem, 15vw, 6rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin: 0;
+  color: var(--ink);
+  text-shadow: 0 6px 30px rgba(0,0,0,.6);
+}
+.solo .timer-display.urgent { color: #f87171; animation: tick-pulse .5s ease-in-out infinite; }
+@keyframes tick-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* ---- Footer --------------------------------------------------------- */
+.solo .solo-foot {
+  padding: 1rem 1.25rem calc(1.1rem + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: .7rem;
+  background: linear-gradient(to top, rgba(0,0,0,.35), transparent);
+}
+
+.solo .solo-winner-line {
+  font-weight: 900; font-size: 1rem;
+  padding: .35rem .85rem; border-radius: 999px;
+  background: rgba(255,255,255,.07);
+}
+.solo .solo-winner-line:empty { display: none; }
+
+.solo .voice-bar { gap: .5rem; margin: 0; }
+.solo .voice-bar .btn {
+  font-family: inherit; font-weight: 800; font-size: .85rem;
+  padding: .45rem .9rem; border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--ink); cursor: pointer;
+}
+.solo .voice-status { font-size: .8rem; }
+.solo .mic-meter { width: 3rem; height: .35rem; background: rgba(255,255,255,.1); }
+
+.solo .solo-count, .solo #players-line {
+  font-size: .82rem; color: #7b8090; text-align: center;
+}
+
+/* Wide screens: the disc should not swallow a laptop display. */
+@media (min-width: 48rem) {
+  .solo .buzzer { width: min(26rem, 55vh); height: min(26rem, 55vh); }
+}
+
+/* The old win state flooded the whole area with the team colour, which swallowed
+   the disc. Keep the disc the hero and let the page glow around it instead. */
+.solo .buzzer-view.win .buzzer-main {
+  background:
+    radial-gradient(70% 45% at 50% 50%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%);
+}
+.solo .buzzer-view.win {
+  background:
+    radial-gradient(120% 70% at 50% 45%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 65%),
+    #08090c;
+}
+.solo .buzzer-view.win .team-banner::before {
+  animation: win-dot 1.2s ease-in-out infinite;
+}
+@keyframes win-dot {
+  0%, 100% { box-shadow: 0 0 10px var(--accent); }
+  50%      { box-shadow: 0 0 22px var(--accent); }
+}
+
+/* Locked state: readable, clearly out, and not competing with the winner. */
+.solo .buzzer-view:not(.win) .buzzer.locked {
+  background: #1b1416;
+  color: #8a6b6e;
+  box-shadow: inset 0 8px 26px rgba(0,0,0,.65), 0 0 0 8px rgba(239,68,68,.06);
+}

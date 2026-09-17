@@ -5,26 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <title>الزر</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/player.css" />
 </head>
 <body class="team solo">
   <!-- 1) Team picker (team mode only) -->
   <section id="team-view" class="solo-name" hidden>
-    <h1 class="app-title small">الزر</h1>
-    <p class="muted center">اختر فريقك</p>
+    <h1 class="app-title small">الـــزر</h1>
+    <p class="screen-lead">اختر فريقك</p>
+    <p class="screen-sub">اضغط على بطاقة فريقك للمتابعة</p>
     <div class="team-cards" id="team-cards"></div>
   </section>
 
   <!-- 2) Name entry -->
   <section id="name-view" class="solo-name" hidden>
-    <h1 class="app-title small">الزر</h1>
-    <p class="muted center" id="name-heading">اكتب اسمك وادخل</p>
+    <h1 class="app-title small">الـــزر</h1>
+    <p class="screen-lead" id="name-heading">وش اسمك؟</p>
+    <p class="screen-sub">حتى يعرف الجميع من ضغط أولاً</p>
     <p class="center solo-chosen-team" id="chosen-team" hidden></p>
 
     <form id="name-form" class="solo-form" autocomplete="off">
       <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required />
 
       <div class="solo-colors" id="color-row" hidden>
-        <span class="muted">اختر لونك</span>
+        <span class="screen-sub">اختر لونك</span>
         <div class="color-swatches" id="color-swatches"></div>
       </div>
 
