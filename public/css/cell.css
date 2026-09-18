@@ -138,6 +138,63 @@
 .voice-panel .btn:disabled,
 .voice-panel select:disabled { opacity: .35; cursor: not-allowed; }
 
+/* ==================================================================
+   تخطيط لعبة الخلية عند المقدم
+   اللوحة في الوسط، وعمود قيادة ثابت بجانبها: الزر والحكم والمؤقت في
+   متناول اليد مهما طالت القائمة تحت اللوحة.
+   ================================================================== */
+@media (min-width: 62rem) {
+  .solo-host.cell-mode .solo-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    gap: 1rem;
+    align-items: start;
+  }
+  .solo-host.cell-mode .solo-stage > .cell-panel { grid-column: 1; grid-row: 1; }
+  .solo-host.cell-mode .solo-stage > .solo-question { grid-column: 1; grid-row: 2; }
+  .solo-host.cell-mode .solo-stage > .stage-card {
+    grid-column: 2; grid-row: 1 / span 2;
+    position: sticky; top: 4.5rem;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  /* لم يبقَ في العمودين الجانبيين إلا اختيار اللعبة والرابط والنقاط، فيضيقان
+     ليأخذ الملعب — اللوحة وعمود القيادة — أكبر مساحة ممكنة. واللوحة تستحق
+     شاشة أعرض من سقف صفحة الأسئلة. */
+  .solo-host.cell-mode .solo-host-main {
+    grid-template-columns: 12rem minmax(0, 1fr) 16rem;
+    max-width: 104rem;
+  }
+}
+
+/* على شاشة أضيق: اللوحة ثم لوحة القيادة مباشرة، والسؤال بعدهما. */
+@media (max-width: 61.99rem) {
+  .solo-host.cell-mode .solo-stage { display: flex; flex-direction: column; }
+  .solo-host.cell-mode .solo-stage > .cell-panel { order: 1; }
+  .solo-host.cell-mode .solo-stage > .stage-card { order: 2; }
+  .solo-host.cell-mode .solo-stage > .solo-question { order: 3; }
+}
+
+/* صندوق الفائز مقاس لعرض الشاشة كاملة؛ في عمود القيادة الضيق يحتاج مقاسه. */
+.solo-host.cell-mode .solo-winner-box {
+  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
+  min-height: 5.5rem;
+  padding: .85rem .7rem;
+}
+.solo-host.cell-mode .solo-winner-box .solo-ms { font-size: .72rem; font-weight: 700; }
+.solo-host.cell-mode .primary-row .btn { font-size: .95rem; padding: .7rem .8rem; }
+.solo-host.cell-mode .timer-row { flex-direction: column; }
+.solo-host.cell-mode .kbd-legend { font-size: .62rem; }
+
+/* أزرار الحكم وقد انتقلت إلى عمود القيادة تحت اسم أول من ضغط */
+.solo-host .cell-resolve.in-desk {
+  margin: .8rem 0 0;
+  background: transparent;
+  border-color: var(--stroke-hi, rgba(255, 255, 255, .16));
+}
+.solo-host.cell-mode .solo-order { max-height: 11rem; overflow-y: auto; }
+
 .cell-head {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: .75rem; flex-wrap: wrap;
@@ -147,7 +204,7 @@
 .cell-status[data-tone="open"] { color: #fafafa; }
 
 .cell-teams {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: .5rem; margin: .7rem 0;
 }
 .cell-team {
@@ -171,6 +228,14 @@
 }
 
 .cell-map { margin: .2rem 0 .6rem; }
+/* على شاشة عريضة جدًا تكبر اللوحة بلا حدود وتدفع كل شيء تحت الطية، فيُحدّها
+   ارتفاع الشاشة لا عرض العمود. */
+.solo-host .cell-map .cellgrid-svg {
+  height: min(56vh, 40rem);
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+}
 
 /* بنك الأسئلة داخل لوحة الخلية */
 .cell-ask { margin-bottom: .6rem; }

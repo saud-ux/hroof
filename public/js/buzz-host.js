@@ -82,6 +82,7 @@
   const cellUndoBtn = document.getElementById('cell-undo');
   const cellAskBtn = document.getElementById('cell-ask-btn');
   const cellAskSlot = document.getElementById('cell-ask-slot');
+  const cellActions = document.querySelector('.cell-actions');
   const stageEl = document.querySelector('.solo-stage');
 
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
@@ -467,6 +468,22 @@
     }
   }
 
+  // Judging a round belongs next to the buzzer, not at the bottom of the board:
+  // in the cell game the verdict buttons move into the control column, right
+  // under the name of whoever pressed first.
+  function placeResolve(mode) {
+    if (!cellResolve || !stageCard) return;
+    if (mode === 'cell') {
+      if (cellResolve.parentElement !== stageCard) {
+        stageCard.insertBefore(cellResolve, winnerBox.nextSibling);
+      }
+      cellResolve.classList.add('in-desk');
+    } else if (cellResolve.parentElement !== cellPanel) {
+      cellPanel.insertBefore(cellResolve, cellActions);
+      cellResolve.classList.remove('in-desk');
+    }
+  }
+
   function setAskOpen(open) {
     cellAskSlot.hidden = !open;
     cellAskBtn.setAttribute('aria-expanded', String(open));
@@ -625,6 +642,9 @@
     // Each game shows its own controls and nothing else: the letter/difficulty
     // card belongs to the question game, the board to the cell game.
     placeBrowser(snap.mode);
+    placeResolve(snap.mode);
+    // The whole desk is rearranged for the cell game, not just added to.
+    document.body.classList.toggle('cell-mode', on);
     if (qpick) qpick.hidden = on || snap.hasBank === false;
     if (!on) { closeCellMenu(); lastCellOpen = null; return; }
     if (!cellGrid) return;
