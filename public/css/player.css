@@ -180,3 +180,6 @@ html:has(body.solo .buzzer-view:not([hidden])),
   .solo .solo-foot { padding-block: var(--space-1) var(--space-2); }
   .solo #players-line { display: none; }
 }
+
+/* No zoom on the phone: double-tap zoom is off everywhere on the page. */
+html:has(body.solo), body.solo, body.solo * { touch-action: manipulation; }
