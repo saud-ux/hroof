@@ -224,8 +224,9 @@
       const count = last.players.filter(p => p.teamId === t.id).length;
       const btn = document.createElement('button');
       btn.className = 'team-card';
-      btn.style.setProperty('--tint', t.color);
+      btn.style.setProperty('--team', t.color);
       btn.innerHTML = `
+        <span class="team-swatch"></span>
         <span class="team-card-name">${esc(t.name)}</span>
         <span class="team-card-status">${count ? `${toArabic(count)} لاعب` : 'لا أحد بعد'}</span>
       `;
@@ -257,6 +258,11 @@
     }
   }
 
+  const COLOR_NAMES = {
+    '#22c55e': 'أخضر', '#60a5fa': 'أزرق', '#fb923c': 'برتقالي', '#c084fc': 'بنفسجي',
+    '#facc15': 'أصفر', '#f472b6': 'وردي', '#2dd4bf': 'فيروزي', '#f87171': 'أحمر',
+  };
+
   function renderSwatches() {
     const palette = last.palette || [];
     if (!palette.length) { colorRow.hidden = true; return; }
@@ -266,7 +272,9 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'color-swatch' + (c === pickedColor ? ' active' : '');
-      b.style.background = c;
+      b.style.setProperty('--sw', c);
+      b.setAttribute('aria-pressed', c === pickedColor ? 'true' : 'false');
+      b.setAttribute('aria-label', COLOR_NAMES[c] || 'لون');
       b.addEventListener('click', () => {
         pickedColor = c;
         setButtonColor(c);
@@ -329,7 +337,7 @@
     if (winner) {
       if (iWon) {
         buzzView.classList.add('win');
-        buzzerLabel.textContent = 'ضغطت أولاً!';
+        buzzerLabel.textContent = 'ضغطت أولا!';
       } else {
         buzzer.classList.add('locked');
         buzzerLabel.textContent = 'مقفل';
@@ -346,7 +354,7 @@
       } else {
         buzzer.classList.add('armed');
         buzzer.disabled = false;
-        buzzerLabel.textContent = 'زر';
+        buzzerLabel.textContent = 'اضغط';
       }
     } else {
       winnerLine.textContent = '';
@@ -361,7 +369,7 @@
     voiceBar.hidden = !voiceOn;
     if (!voiceOn && voice && voice.isJoined()) {
       voice.leave();
-      voiceBtn.textContent = '🎙 انضم للصوت';
+      ZIcon.setLabel(voiceBtn, 'mic', 'انضم للصوت');
     }
   }
 
@@ -374,7 +382,7 @@
       voiceStatus.dataset.state = state || '';
     },
     onRoom: () => {
-      voiceBtn.textContent = voice.isJoined() ? '🔇 خروج من الصوت' : '🎙 انضم للصوت';
+      if (voice.isJoined()) ZIcon.setLabel(voiceBtn, 'mic-off', 'خروج من الصوت'); else ZIcon.setLabel(voiceBtn, 'mic', 'انضم للصوت');
     },
     onLevel: (v, open) => {
       micMeter.hidden = !voice.isJoined();
@@ -387,13 +395,13 @@
     if (!me.id) return;
     if (voice.isJoined()) {
       voice.leave();
-      voiceBtn.textContent = '🎙 انضم للصوت';
+      ZIcon.setLabel(voiceBtn, 'mic', 'انضم للصوت');
       return;
     }
     voiceBtn.disabled = true;
     const ok = await voice.join(me.id);
     voiceBtn.disabled = false;
-    if (ok) voiceBtn.textContent = '🔇 خروج من الصوت';
+    if (ok) ZIcon.setLabel(voiceBtn, 'mic-off', 'خروج من الصوت');
   });
 
   const press = (e) => {
@@ -525,7 +533,7 @@
   // The host closed the voice channel: drop the mic without waiting for a state.
   socket.on('voice:closed', () => {
     if (voice.isJoined()) voice.leave();
-    voiceBtn.textContent = '🎙 انضم للصوت';
+    ZIcon.setLabel(voiceBtn, 'mic', 'انضم للصوت');
     voiceBar.hidden = true;
   });
 

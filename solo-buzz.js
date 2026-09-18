@@ -25,8 +25,8 @@ const CELL_UNDO_DEPTH = 40;
 // Each participant picks a colour; their buzzer takes it, the way a team's
 // colour works in the Cell game.
 const PALETTE = [
-  '#22c55e', '#3b82f6', '#f97316', '#a855f7',
-  '#eab308', '#ec4899', '#14b8a6', '#ef4444',
+  '#22c55e', '#60a5fa', '#fb923c', '#c084fc',
+  '#facc15', '#f472b6', '#2dd4bf', '#f87171',
 ];
 
 // The grid lives in the room, so a phone that reloads — or joins late — gets
@@ -348,7 +348,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     // ---- Player ------------------------------------------------------------
     socket.on('solo:join', ({ name, color, teamId } = {}) => {
       const clean = cleanName(name);
-      if (!clean) { socket.emit('solo:joinRejected', { reason: 'اكتب اسمك أولاً' }); return; }
+      if (!clean) { socket.emit('solo:joinRejected', { reason: 'اكتب اسمك أولا' }); return; }
       if (room.players.length >= MAX_PLAYERS && !findPlayer(socket.id)) {
         socket.emit('solo:joinRejected', { reason: 'العدد اكتمل' });
         return;
@@ -358,7 +358,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       let team = null;
       if (room.teams.length) {
         team = room.teams.find(t => t.id === teamId);
-        if (!team) { socket.emit('solo:joinRejected', { reason: 'اختر فريقك أولاً' }); return; }
+        if (!team) { socket.emit('solo:joinRejected', { reason: 'اختر فريقك أولا' }); return; }
       }
 
       const finalName = uniqueName(clean, socket.id);

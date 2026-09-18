@@ -3,10 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0a0b0e" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#fde68a" data-fixed="1" />
+  <meta name="color-scheme" content="light dark" />
   <title>الزر — شاشة المقدم</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/ui.css" />
+  <link rel="stylesheet" href="/css/zir-base.css" />
   <link rel="stylesheet" href="/css/host.css" />
   <link rel="stylesheet" href="/css/cell.css" />
 </head>
@@ -17,7 +20,8 @@
       <span class="pill state-pill" id="state-pill" data-state="closed">الزر مقفل</span>
       <span class="pill" id="round-label">جولة ١</span>
       <span class="pill" id="players-pill">٠ مشارك</span>
-      <button class="pill pill-btn" id="sound-btn" type="button" aria-pressed="true" title="صوت عند أول ضغطة">🔔 الصوت</button>
+      <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="الوضع الداكن"></button>
+      <button class="pill pill-btn" id="sound-btn" type="button" aria-pressed="true" title="صوت عند أول ضغطة" data-icon="bell">الصوت</button>
     </div>
   </header>
 
@@ -28,7 +32,7 @@
         <p class="card-label">اختر اللعبة</p>
         <div class="mode-row" id="mode-row">
           <button class="mode-btn active" type="button" data-mode="buzz">
-            <span class="mode-emoji">🔔</span>
+            <span class="mode-emoji" data-icon="bell"></span>
             <span class="mode-name">لعبة الأسئلة</span>
             <span class="mode-sub">سؤال وزر فقط</span>
           </button>
@@ -48,9 +52,9 @@
         </div>
         <p class="letter-caption qbrowse-or">سؤال عشوائي بحسب الصعوبة</p>
         <div class="solo-diff-row" id="diff-row">
-          <button class="btn diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span><kbd>1</kbd></button>
-          <button class="btn diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span><kbd>2</kbd></button>
-          <button class="btn diff-pill hard" data-diff="صعب">صعب <span class="diff-count" data-count="صعب"></span><kbd>3</kbd></button>
+          <button class="diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span><kbd>1</kbd></button>
+          <button class="diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span><kbd>2</kbd></button>
+          <button class="diff-pill hard" data-diff="صعب">صعب <span class="diff-count" data-count="صعب"></span><kbd>3</kbd></button>
         </div>
       </div>
 
@@ -58,7 +62,7 @@
         <p class="card-label">رابط المشاركين</p>
         <div class="solo-link-row">
           <code id="share-link">…</code>
-          <button id="copy-link" class="btn btn-ghost btn-small">نسخ</button>
+          <button id="copy-link" class="btn btn-small">نسخ</button>
         </div>
         <details class="qr-fold" id="qr-fold" open>
           <summary>رمز QR</summary>
@@ -86,14 +90,14 @@
         <div class="cell-menu" id="cell-menu" hidden>
           <div class="cell-menu-head">
             <span class="cell-menu-title">تلوين يدوي: <b id="cell-menu-letter">—</b></span>
-            <button class="cell-menu-close" id="cell-menu-close" type="button" aria-label="إغلاق">×</button>
+            <button class="cell-menu-close" id="cell-menu-close" type="button" aria-label="إغلاق" data-icon="x"></button>
           </div>
           <div class="cell-menu-row" id="cell-menu-row"></div>
         </div>
 
         <!-- بنك الأسئلة يسكن هنا في لعبة الخلية: قائمة حرف الخلية المفتوحة -->
         <div class="cell-ask" id="cell-ask">
-          <button class="btn btn-small cell-ask-btn" id="cell-ask-btn" type="button" aria-expanded="false">
+          <button class="btn cell-ask-btn" id="cell-ask-btn" type="button" aria-expanded="false">
             اطرح سؤالًا
           </button>
           <div class="cell-ask-slot" id="cell-ask-slot" hidden></div>
@@ -102,7 +106,7 @@
         <div class="cell-resolve" id="cell-resolve" hidden>
           <p class="cell-resolve-label" id="cell-resolve-label">نتيجة السؤال</p>
           <div class="cell-resolve-row">
-            <button class="btn btn-small cell-btn-correct" id="cell-correct" type="button">✓ إجابة صحيحة</button>
+            <button class="btn btn-small cell-btn-correct" id="cell-correct" type="button">إجابة صحيحة</button>
           </div>
           <p class="cell-resolve-label">إذا كانت خاطئة:</p>
           <div class="cell-resolve-row">
@@ -123,40 +127,40 @@
            host reads them here and asks the one they want. -->
       <div class="card qbrowse-wrap" id="question-browser"></div>
 
-      <div class="card solo-question" id="question-box" hidden>
-        <div class="solo-q-meta">
-          <span>الفئة: <b id="q-category">—</b></span>
-          <span>الصعوبة: <b id="q-difficulty">—</b></span>
-          <button class="q-peek" id="toggle-answer" type="button" aria-pressed="false">إخفاء الإجابة <kbd>H</kbd></button>
+      <div class="card q-card solo-question" id="question-box" hidden>
+        <div class="q-meta">
+          <span class="chip" id="q-category">—</span>
+          <span class="chip" id="q-difficulty">—</span>
+          <button class="btn btn-small btn-ghost q-peek" id="toggle-answer" type="button" aria-pressed="false">إخفاء الإجابة <kbd>H</kbd></button>
         </div>
-        <p class="solo-q-text" id="q-text">—</p>
-        <p class="solo-q-answer" id="q-answer-row">الإجابة: <b id="q-answer">—</b></p>
-        <p class="solo-q-hint muted" id="q-hint"></p>
+        <p class="q-text" id="q-text">—</p>
+        <p class="q-answer" id="q-answer-row">الإجابة: <b id="q-answer">—</b></p>
+        <p class="q-hint" id="q-hint"></p>
       </div>
 
       <div class="card stage-card">
-        <div id="winner-box" class="solo-winner-box idle">
+        <div id="winner-box" class="winner-box idle">
           <span id="winner-name">لم يبدأ الضغط</span>
-          <span id="winner-ms" class="solo-ms"></span>
+          <span id="winner-ms" class="winner-ms"></span>
         </div>
 
         <div class="solo-controls primary-row">
-          <button id="award-btn" class="btn btn-award" hidden><span id="award-label">✓ نقطة للفائز</span><kbd>A</kbd></button>
+          <button id="award-btn" class="btn btn-large btn-award" hidden><span id="award-label">نقطة للفائز</span><kbd>A</kbd></button>
           <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر <kbd>Space</kbd></button>
-          <button id="next-btn" class="btn btn-next" hidden>جولة جديدة <kbd>N</kbd></button>
+          <button id="next-btn" class="btn btn-large" hidden>جولة جديدة <kbd>N</kbd></button>
         </div>
 
         <div class="timer-row">
-          <button class="btn timer-btn" data-seconds="5">⏱ ٥ ثوانٍ <kbd>5</kbd></button>
-          <button class="btn timer-btn" data-seconds="10">⏱ ١٠ ثوانٍ <kbd>0</kbd></button>
+          <button class="btn timer-btn" data-seconds="5" data-icon="timer">٥ ثوانٍ <kbd>5</kbd></button>
+          <button class="btn timer-btn" data-seconds="10" data-icon="timer">١٠ ثوانٍ <kbd>0</kbd></button>
           <button id="stop-timer" class="btn btn-ghost btn-small" hidden>إيقاف</button>
           <span id="timer-display" class="timer-display" hidden>—</span>
         </div>
 
-        <ol id="press-order" class="solo-order"></ol>
+        <ol id="press-order" class="press-order"></ol>
 
         <div class="solo-controls minor-row">
-          <button id="disarm-btn" class="btn btn-ghost btn-small">قفل <kbd>Esc</kbd></button>
+          <button id="disarm-btn" class="btn btn-ghost btn-small" data-icon="lock">قفل <kbd>Esc</kbd></button>
           <button id="clear-q-btn" class="btn btn-ghost btn-small" hidden>إخفاء السؤال</button>
           <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
         </div>
@@ -198,10 +202,12 @@
           </label>
         </div>
         <p class="voice-off-hint" id="voice-off-hint">الصوت مغلق — لا يظهر عند المشاركين.</p>
-        <button id="voice-btn" class="btn btn-ghost btn-small">🎙 تشغيل الصوت</button>
-        <span id="voice-status" class="voice-status muted"></span>
-        <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>
-        <button id="voice-all-btn" class="btn btn-small voice-all">🎙 افتح المايك للجميع</button>
+        <div class="voice-row">
+          <button id="voice-btn" class="btn btn-small" data-icon="mic">تشغيل الصوت</button>
+          <span id="voice-status" class="voice-status muted"></span>
+          <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>
+        </div>
+        <button id="voice-all-btn" class="btn btn-small voice-all" data-icon="mic">افتح المايك للجميع</button>
         <label class="voice-mode">
           من يتكلم؟
           <select id="voice-mode" class="qb-select">
@@ -222,7 +228,7 @@
         <div id="teams-editor" hidden>
           <div id="teams-rows" class="teams-rows"></div>
           <div class="teams-actions">
-            <button id="add-team" class="btn btn-ghost btn-small" type="button">+ فريق</button>
+            <button id="add-team" class="btn btn-small" type="button" data-icon="plus">فريق</button>
             <button id="save-teams" class="btn btn-primary btn-small" type="button">حفظ الفرق</button>
           </div>
           <p class="solo-error" id="teams-error" hidden></p>
@@ -231,9 +237,10 @@
     </section>
   </main>
 
-  <div class="host-toast" id="host-toast" role="status" aria-live="polite" hidden></div>
+  <div class="toast host-toast" id="host-toast" role="status" aria-live="polite" hidden></div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/icons.js"></script>
   <script src="/js/voice.js"></script>
   <script src="/js/question-browser.js"></script>
   <script src="/js/cell-grid.js"></script>

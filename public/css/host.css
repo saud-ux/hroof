@@ -1,97 +1,24 @@
 /* ==================================================================
-   شاشة المقدم — تصميم مخصّص
+   شاشة المقدم (/buzz/host) — layout only. Components come from ui.css.
    Scoped to .solo-host so the Cell game's presenter screen is untouched.
    ================================================================== */
 
-.solo-host {
-  /* Ink — every text colour holds 4.5:1 on --panel and --panel-2. */
-  --ink: #fafafa;
-  --ink-dim: #9da1ac;
-  --ink-faint: #858b98;
-  --on-accent: #07080a;
+.solo-host { background-color: var(--paper-deep); }
 
-  /* Surfaces */
-  --ground: #0a0b0e;
-  --panel: #14161b;
-  --panel-2: #1b1e25;
-  --stroke: rgba(255,255,255,.08);
-  --stroke-hi: rgba(255,255,255,.16);
-
-  /* Signals, each with a soft fill and an edge for tinted surfaces. */
-  --good: #22c55e;
-  --good-soft: rgba(34,197,94,.1);
-  --good-edge: rgba(34,197,94,.32);
-  --warn: #f59e0b;
-  --warn-soft: rgba(245,158,11,.08);
-  --bad: #ef4444;
-  --bad-text: #f87171;
-  --bad-soft: rgba(239,68,68,.1);
-  --bad-edge: rgba(239,68,68,.32);
-
-  --focus: #fafafa;
-  --r-sm: .5rem;
-  --r-md: .7rem;
-  --r-lg: 1rem;
-  --ease: cubic-bezier(.2,.8,.2,1);
-
-  background:
-    radial-gradient(90% 55% at 50% -15%, rgba(34,197,94,.08), transparent 60%),
-    var(--ground);
-  color: var(--ink);
-  min-height: 100vh;
-}
-
-/* ---- Focus: one visible ring for every control ----------------------- */
-.solo-host :is(button, select, input, summary, a):focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-.solo-host :is(button, select, input, summary, a):focus:not(:focus-visible) { outline: none; }
-
-/* ---- Top bar --------------------------------------------------------- */
-.solo-host .topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap;
-  padding: .9rem 1.5rem;
-  border-bottom: 1px solid var(--stroke);
-  background: rgba(10,11,14,.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  position: sticky; top: 0; z-index: 20;
-}
-.solo-host .topbar .app-title {
-  font-size: 1.05rem; font-weight: 900; margin: 0;
-  display: flex; align-items: baseline; gap: .6rem;
-}
-.solo-host .topbar-tag {
-  font-size: .75rem; font-weight: 700; color: var(--ink-faint);
-  letter-spacing: .08em;
-}
-.solo-host .topbar-right { display: flex; gap: .45rem; }
-.solo-host .pill {
-  font-size: .78rem; font-weight: 800;
-  padding: .3rem .75rem; border-radius: 999px;
-  background: var(--panel-2); border: 1px solid var(--stroke);
-  color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
+.solo-host .topbar { position: sticky; top: 0; z-index: 20; }
+.solo-host .pill-btn { cursor: pointer; font-family: inherit; }
+.solo-host .pill-btn[aria-pressed="false"] { border-style: dashed; }
 
 /* ---- Layout ---------------------------------------------------------- */
 .solo-host .solo-host-main {
-  display: grid; gap: 1rem;
+  display: grid; gap: var(--space-6);
   grid-template-columns: minmax(0, 1fr);
-  max-width: 78rem; margin: 0 auto;
-  padding: 1.25rem 1.25rem 3rem;
+  max-width: 80rem; margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-12);
   align-items: start;
 }
-
-/* style.css paints these wrappers as panels; here they only stack cards,
-   otherwise every card sits inside a second box. */
-.solo-host .solo-side,
-.solo-host .solo-stage,
-.solo-host .solo-players {
-  display: flex; flex-direction: column; gap: 1rem;
-  background: none; border: none; border-radius: 0; padding: 0;
+.solo-host :is(.solo-side, .solo-stage, .solo-players) {
+  display: flex; flex-direction: column; gap: var(--space-6);
   min-width: 0;
 }
 
@@ -105,12 +32,13 @@
   .solo-host .solo-stage   { order: 2; }
   .solo-host .solo-players { order: 3; }
   .solo-host .solo-share   { order: 4; }
+  .solo-host .solo-host-main { padding: var(--space-4) var(--space-3) var(--space-8); gap: var(--space-5); }
 }
 
 /* Tablet / small laptop: picker beside the stage, the room under the stage. */
 @media (min-width: 48rem) and (max-width: 71.99rem) {
   .solo-host .solo-host-main {
-    grid-template-columns: 18rem minmax(0, 1fr);
+    grid-template-columns: 19rem minmax(0, 1fr);
     grid-template-areas: "side stage" "side players";
   }
   .solo-host .solo-side    { grid-area: side; }
@@ -120,650 +48,159 @@
 
 /* Laptop and up: three columns. */
 @media (min-width: 72rem) {
-  .solo-host .solo-host-main {
-    grid-template-columns: 19rem minmax(0, 1fr) 17rem;
-  }
+  .solo-host .solo-host-main { grid-template-columns: 20rem minmax(0, 1fr) 18rem; }
   .solo-host .solo-side    { order: 1; }
   .solo-host .solo-stage   { order: 2; }
   .solo-host .solo-players { order: 3; }
 }
 
-/* Side columns stay in reach while the stage scrolls. */
-@media (min-width: 48rem) {
-  .solo-host .solo-side {
-    position: sticky; top: 4.5rem;
-    max-height: calc(100vh - 5.5rem);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--stroke-hi) transparent;
-  }
-}
-@media (min-width: 72rem) {
-  .solo-host .solo-players {
-    position: sticky; top: 4.5rem;
-    max-height: calc(100vh - 5.5rem);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--stroke-hi) transparent;
-  }
-}
-
-@media (max-width: 40rem) {
-  .solo-host .topbar { padding: .75rem 1rem; }
-  .solo-host .solo-host-main { padding: 1rem .75rem 2.5rem; gap: .75rem; }
-  .solo-host .solo-stage,
-  .solo-host .solo-players { gap: .75rem; }
-}
-
 /* ---- Cards ----------------------------------------------------------- */
-.solo-host .card {
-  background: var(--panel);
-  border: 1px solid var(--stroke);
-  border-radius: var(--r-lg);
-  padding: 1rem;
-  margin: 0;
-}
-.solo-host .card-label {
-  font-size: .72rem; font-weight: 800;
-  letter-spacing: .12em;
-  color: var(--ink-faint);
-  margin: 0 0 .7rem;
-}
-
-/* ---- Shared button base ---------------------------------------------- */
-.solo-host :is(.letter-btn, .diff-pill, .timer-btn, .score-btn,
-               .primary-row .btn, .minor-row .btn, .voice-panel .btn, .teams-actions .btn) {
-  font-family: inherit;
-  cursor: pointer;
-  color: var(--ink);
-  background: var(--panel-2);
-  border: 1px solid var(--stroke);
-  transition:
-    background .15s ease, border-color .15s ease, color .15s ease,
-    opacity .15s ease, transform .08s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.solo-host :is(.letter-btn, .diff-pill, .timer-btn, .score-btn,
-               .primary-row .btn, .minor-row .btn, .voice-panel .btn, .teams-actions .btn):disabled {
-  opacity: .3; cursor: not-allowed; transform: none;
-}
-
-/* ---- Share ----------------------------------------------------------- */
-.solo-host .solo-link-row { display: flex; gap: .5rem; align-items: center; flex-wrap: nowrap; }
-.solo-host .solo-link-row code {
-  flex: 1; min-width: 0;
-  direction: ltr; font-size: .82rem; word-break: break-all;
-  background: var(--panel-2); border: 1px solid var(--stroke);
-  padding: .6rem; border-radius: .6rem; color: var(--ink-dim);
-  user-select: all;
-}
-.solo-host .solo-link-row .btn { flex: none; }
-
-/* The QR is scanned once at the start; let the host fold it away afterwards. */
-.solo-host .qr-fold { margin-top: .75rem; }
-.solo-host .qr-fold summary {
-  cursor: pointer; font-size: .78rem; color: var(--ink-dim);
-  list-style: none; padding: .35rem 0;
-  border-radius: .3rem;
-}
-.solo-host .qr-fold summary::-webkit-details-marker { display: none; }
-.solo-host .qr-fold summary::before { content: '▸ '; }
-.solo-host .qr-fold[open] summary::before { content: '▾ '; }
-.solo-host .solo-qr {
-  display: block; width: 100%; max-width: 13rem;
-  margin: .75rem auto 0;
-  border-radius: .75rem; background: #fff; padding: .6rem;
-  image-rendering: pixelated;
-}
+.solo-host .card { margin: 0; }
+.solo-host .card-label { margin-bottom: var(--space-3); }
 
 /* ---- Question picker -------------------------------------------------- */
-.solo-host .letter-caption {
-  font-size: .8rem; color: var(--ink-dim); margin: 0 0 .5rem;
-}
-/* An even grid reads faster than a wrapped row of 28 mixed-width pills. */
-.solo-host .letter-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.2rem, 1fr));
-  gap: .3rem;
-}
-.solo-host .letter-btn {
-  font-size: .95rem; font-weight: 800;
-  min-width: 0; min-height: 2.2rem;
-  padding: .4rem .2rem; text-align: center;
-  border-radius: var(--r-sm);
-}
-.solo-host .letter-btn[data-letter=""] {
-  grid-column: span 3; font-size: .78rem; letter-spacing: .02em;
-}
-.solo-host .letter-btn:active:not(:disabled) { transform: scale(.92); }
-.solo-host .letter-btn.active {
-  background: var(--good); color: var(--on-accent); border-color: var(--good);
-}
+.solo-host .letter-caption { margin: 0 0 var(--space-2); font: 700 13px/1.4 var(--font-sans); color: var(--ink-muted); }
+.solo-host .solo-diff-row { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-5); }
+.solo-host .solo-diff-row .diff-pill { justify-content: space-between; min-height: 56px; font-size: 18px; }
+.solo-host .solo-diff-row .diff-pill .diff-count { margin-inline-start: auto; }
 
-.solo-host .solo-diff-row { display: flex; gap: .5rem; margin-top: .9rem; }
-.solo-host .diff-pill {
-  flex: 1;
-  font-weight: 800; font-size: .95rem;
-  padding: .65rem .5rem; border-radius: var(--r-md);
-  display: flex; flex-direction: column; align-items: center; gap: .1rem;
-}
-.solo-host .diff-pill .diff-count {
-  font-size: .72rem; font-weight: 700; color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
-.solo-host .diff-pill:active:not(:disabled) { transform: scale(.97); }
-
-/* ---- Question --------------------------------------------------------- */
-.solo-host .solo-question {
-  padding: 1.15rem;
-  border-color: var(--good-edge);
-  animation: host-rise .3s var(--ease) both;
-}
-.solo-host .solo-q-meta {
-  display: flex; gap: .9rem; flex-wrap: wrap;
-  font-size: .78rem; color: var(--ink-faint); letter-spacing: .04em;
-  margin-bottom: .6rem; opacity: 1;
-}
-.solo-host .solo-q-meta b { color: var(--ink-dim); }
-.solo-host .solo-q-text {
-  font-size: clamp(1.15rem, 2.2vw, 1.5rem); font-weight: 800;
-  line-height: 1.55; margin: 0 0 .8rem;
-  text-wrap: pretty;
-}
-.solo-host .solo-q-answer {
-  font-size: 1.05rem; font-weight: 800; margin: 0;
-  padding: .55rem .8rem; border-radius: .6rem;
-  background: var(--good-soft); border: 1px solid var(--good-edge);
-}
-.solo-host .solo-q-answer b { color: var(--good); }
-.solo-host .solo-q-hint { margin: .5rem 0 0; font-size: .85rem; color: var(--ink-faint); }
-.solo-host .solo-q-hint:empty { display: none; }
-
-@keyframes host-rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
+/* ---- Share ------------------------------------------------------------ */
+.solo-host .solo-link-row { display: flex; gap: var(--space-2); align-items: center; }
+.solo-host .solo-link-row code { flex: 1; min-width: 0; padding: 8px 10px; font-size: 14px; word-break: break-all; }
+.solo-host .qr-fold { margin-top: var(--space-4); }
+.solo-host .qr-fold summary { cursor: pointer; font: 800 13px/1.4 var(--font-sans); color: var(--ink-muted); }
+.solo-host .solo-qr { display: block; width: 100%; max-width: 15rem; margin: var(--space-3) auto 0; }
 
 /* ---- Stage ------------------------------------------------------------ */
-/* The stage card carries the room's state, so the host never has to read
-   text to know whether the button is live. */
-.solo-host .stage-card {
-  position: relative;
-  display: flex; flex-direction: column; gap: .9rem;
-  transition: border-color .3s ease, box-shadow .3s ease;
-}
-.solo-host .stage-card[data-state="armed"] {
-  border-color: rgba(34,197,94,.45);
-  box-shadow: 0 0 0 1px rgba(34,197,94,.2), 0 0 40px rgba(34,197,94,.1);
-}
-.solo-host .stage-card[data-state="armed"]::before {
-  content: '';
-  position: absolute; inset-inline: 1rem; top: -1px; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--good), transparent);
-  animation: stage-scan 1.8s ease-in-out infinite;
-  pointer-events: none;
-}
-.solo-host .stage-card[data-state="hit"] { border-color: var(--stroke-hi); }
-
-@keyframes stage-scan {
-  0%, 100% { opacity: .35; }
-  50%      { opacity: 1; }
-}
-
-.solo-host .solo-winner-box {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: .3rem;
-  min-height: 8.5rem; border-radius: .9rem; padding: 1.25rem 1rem;
-  border: 1px solid transparent;
-  font-size: clamp(1.7rem, 4.5vw, 3rem); font-weight: 900; text-align: center;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-  transition: background .3s ease, color .3s ease, border-color .3s ease;
-}
-/* Idle stage: an invitation rather than an empty box. */
-.solo-host .solo-winner-box.idle {
-  background: var(--panel-2);
-  color: var(--ink-dim);
-  border: 1px dashed var(--stroke-hi);
-  font-size: 1rem; font-weight: 700; letter-spacing: .02em;
-  gap: .5rem;
-}
-.solo-host .solo-winner-box.idle::before {
-  content: '';
-  width: .55rem; height: .55rem; border-radius: 50%;
-  background: var(--ink-faint);
-}
-.solo-host .stage-card[data-state="armed"] .solo-winner-box.idle {
-  color: var(--good);
-  border-color: rgba(34,197,94,.35);
-  background: rgba(34,197,94,.06);
-}
-.solo-host .stage-card[data-state="armed"] .solo-winner-box.idle::before {
-  background: var(--good);
-  box-shadow: 0 0 12px var(--good);
-  animation: stage-dot 1.2s ease-in-out infinite;
-}
-@keyframes stage-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .5; transform: scale(.8); }
-}
-
-/* The background is the winner's colour, set inline by buzz-host.js. */
-.solo-host .solo-winner-box.hit {
-  color: var(--on-accent);
-  animation: host-hit .4s cubic-bezier(.2,1.3,.4,1);
-  box-shadow: 0 10px 40px rgba(0,0,0,.45);
-}
-@keyframes host-hit {
-  0%   { transform: scale(.94); }
-  60%  { transform: scale(1.03); }
-  100% { transform: scale(1); }
-}
-.solo-host .solo-ms {
-  font-size: .9rem; font-weight: 700; opacity: .75;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---- Timer ------------------------------------------------------------ */
-.solo-host .timer-row {
-  display: flex; gap: .5rem; align-items: center; justify-content: center;
-  flex-wrap: wrap; margin: 0;
-}
-.solo-host .timer-btn {
-  font-weight: 800; font-size: .9rem;
-  padding: .5rem 1rem; border-radius: var(--r-md);
-}
-.solo-host .timer-btn:active:not(:disabled) { transform: scale(.97); }
-.solo-host .timer-display {
-  font-size: 2.2rem; font-weight: 900; font-variant-numeric: tabular-nums;
-  line-height: 1;
-  min-width: 3rem; text-align: center; color: var(--warn);
-  margin-inline-start: .3rem;
-}
-.solo-host .timer-display.urgent { color: var(--bad-text); animation: host-tick .5s ease-in-out infinite; }
-@keyframes host-tick {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.1); }
-}
-
-/* ---- Controls --------------------------------------------------------- */
-.solo-host .solo-controls {
-  display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; margin: 0;
-}
-.solo-host .primary-row .btn {
-  font-weight: 900; font-size: 1.05rem;
-  padding: .8rem 1.6rem; border-radius: .8rem;
-  min-width: 10rem;
-}
-.solo-host .primary-row :is(.btn-primary, .btn-award) {
-  background: var(--good); color: var(--on-accent); border-color: var(--good);
-  box-shadow: 0 8px 22px rgba(34,197,94,.22);
-}
-.solo-host .primary-row .btn-next { border-color: var(--stroke-hi); }
-.solo-host .primary-row .btn:active:not(:disabled) { transform: scale(.98); }
-
-.solo-host .minor-row .btn {
-  font-weight: 700; font-size: .8rem;
-  padding: .4rem .85rem; border-radius: .6rem;
-  background: transparent; color: var(--ink-dim);
-}
-.solo-host .minor-row .btn-danger { color: var(--bad-text); border-color: var(--bad-edge); }
-
-/* ---- Press order ------------------------------------------------------ */
-.solo-host .solo-order {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: .3rem; counter-reset: rank;
-}
-.solo-host .solo-order:empty { display: none; }
-.solo-host .solo-order li {
-  counter-increment: rank;
-  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
-  background: var(--panel-2); border: 1px solid transparent;
-  border-radius: var(--r-sm); padding: .45rem .7rem;
-  font-size: .85rem; color: var(--ink-dim);
-}
-.solo-host .solo-order li::before {
-  content: counter(rank); font-weight: 900; color: var(--ink-faint);
-  margin-inline-end: .5rem; font-variant-numeric: tabular-nums;
-}
-.solo-host .solo-order li > span:first-of-type { flex: 1; }
-/* The first press is the one that matters; rank the rest quietly. */
-.solo-host .solo-order li.first {
-  background: rgba(34,197,94,.14);
-  border-color: var(--good-edge);
-  font-size: .9rem; font-weight: 800; color: var(--ink);
-}
-.solo-host .solo-order li.first::before { color: var(--good); }
-.solo-host .press-team { font-size: .75rem; color: var(--ink-faint); opacity: 1; margin-inline-start: .4rem; }
-
-/* ---- Scoreboard -------------------------------------------------------- */
-.solo-host .scoreboard { margin: 0; padding: 1rem; border-top: 1px solid var(--stroke); }
-.solo-host .scoreboard-head {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem;
-}
-.solo-host .scoreboard-head .card-label { margin: 0; }
-.solo-host .score-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
-.solo-host .score-list li {
-  display: flex; align-items: center; gap: .6rem;
-  background: var(--panel-2); border-radius: var(--r-md); padding: .55rem .7rem;
-}
-.solo-host .score-name {
-  flex: 1; min-width: 0; font-weight: 800; font-size: 1rem;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.solo-host .score-points {
-  min-width: 2.4rem; text-align: center;
-  font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums;
-}
-.solo-host .score-list .score-btn {
-  flex: none;
-  width: 2.1rem; height: 2.1rem; border-radius: .55rem;
-  background: var(--panel);
-  font-size: 1.15rem; font-weight: 900; line-height: 1;
-  display: grid; place-items: center; padding: 0;
-}
-.solo-host .score-btn:active:not(:disabled) { transform: scale(.92); }
-
-/* ---- Voice ------------------------------------------------------------- */
-.solo-host .voice-panel {
-  display: flex; flex-direction: column; align-items: stretch; gap: .5rem;
-  border-bottom: 1px solid var(--stroke); padding-bottom: 1rem; margin-bottom: 0;
-}
-.solo-host .voice-panel .card-label { margin-bottom: .2rem; }
-.solo-host .voice-panel .btn {
-  font-weight: 800; font-size: .85rem;
-  padding: .55rem .8rem; border-radius: .6rem;
-}
-.solo-host .voice-panel .voice-all.on {
-  background: var(--good); color: var(--on-accent); border-color: var(--good);
-}
-.solo-host .voice-mode {
-  display: flex; align-items: center; justify-content: space-between; gap: .4rem;
-  font-size: .78rem; color: var(--ink-dim); opacity: 1;
-}
-.solo-host .voice-mode select {
-  font-family: inherit; font-size: .8rem; padding: .35rem .5rem;
-  border-radius: .45rem; background: var(--panel-2); color: var(--ink);
-  border: 1px solid var(--stroke); cursor: pointer;
-  color-scheme: dark;
-}
-.solo-host .voice-status { font-size: .78rem; text-align: center; }
-.solo-host .voice-status:empty { display: none; }
-.solo-host .voice-status[data-state="live"]  { color: var(--good); }
-.solo-host .voice-status[data-state="muted"] { color: var(--ink-dim); }
-.solo-host .voice-status[data-state="error"] { color: var(--bad-text); }
-.solo-host .mic-meter {
-  display: block; width: 100%; height: .35rem; border-radius: 999px;
-  background: rgba(255,255,255,.08); overflow: hidden;
-}
-.solo-host .mic-meter i { background: var(--good); }
-.solo-host .mic-meter[data-open="0"] i { background: var(--ink-faint); }
-
-/* ---- Teams editor ------------------------------------------------------ */
-.solo-host .teams-setup { margin: 0; padding: 1rem; border-bottom: 1px solid var(--stroke); }
-.solo-host .teams-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
-.solo-host .teams-head .card-label { margin: 0; }
-.solo-host .teams-toggle {
-  display: flex; align-items: center; gap: .4rem;
-  font-size: .78rem; cursor: pointer; color: var(--ink-dim);
-}
-.solo-host .teams-toggle input { accent-color: var(--good); width: 1rem; height: 1rem; margin: 0; cursor: pointer; }
-.solo-host .teams-rows { display: flex; flex-direction: column; gap: .4rem; margin: .7rem 0; }
-.solo-host .team-row { display: flex; align-items: center; gap: .4rem; }
-.solo-host .team-row .color-swatch {
-  width: 1.75rem; height: 1.75rem; border-radius: .45rem; flex: none;
-  border: 1px solid var(--stroke-hi); cursor: pointer; padding: 0;
-  transition: transform .1s ease;
-}
-.solo-host .team-row .color-swatch:active { transform: scale(.9); }
-.solo-host .team-name-input {
-  flex: 1; min-width: 0;
-  font-family: inherit; font-size: .9rem; font-weight: 700;
-  padding: .45rem .6rem; text-align: start;
-  border-radius: var(--r-sm); color: var(--ink);
-  background: var(--panel-2); border: 1px solid var(--stroke);
-  transition: border-color .15s ease;
-}
-.solo-host .team-name-input::placeholder { color: var(--ink-faint); }
-.solo-host .team-name-input:focus { outline: none; border-color: var(--good); }
-.solo-host .teams-actions { display: flex; gap: .4rem; }
-.solo-host .teams-actions .btn {
-  flex: 1; font-weight: 800; font-size: .8rem;
-  padding: .5rem; border-radius: var(--r-sm);
-}
-.solo-host .teams-actions .btn-primary { background: var(--good); color: var(--on-accent); border-color: var(--good); }
-
-/* ---- Players ----------------------------------------------------------- */
-.solo-host .solo-player-list {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: .35rem;
-}
-.solo-host .solo-player-list li {
-  display: flex; align-items: center; gap: .4rem;
-  background: var(--panel-2); border: none;
-  border-inline-start: 2px solid transparent;
-  border-radius: .55rem; padding: .4rem .6rem;
-  font-size: .9rem;
-}
-.solo-host .solo-player-list li.pressed { border-inline-start-color: var(--good); }
-.solo-host .player-dot {
-  display: inline-block; width: .55rem; height: .55rem; border-radius: 50%;
-  flex: none; margin: 0;
-  box-shadow: 0 0 0 1px var(--stroke-hi);
-}
-.solo-host .solo-player-list li > span:nth-child(2) {
-  flex: 1; min-width: 0; font-weight: 700;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-/* Row actions: small glyphs with a real hit area. */
-.solo-host :is(.solo-mic, .solo-kick) {
-  flex: none;
-  display: grid; place-items: center;
-  width: 1.9rem; height: 1.9rem;
-  background: none; border: none; border-radius: .45rem;
-  cursor: pointer; font-family: inherit;
-  font-size: .95rem; line-height: 1; padding: 0;
-  transition: background .12s ease, opacity .12s ease;
-}
-.solo-host .solo-mic { opacity: .5; }
-.solo-host .solo-mic.on { opacity: 1; }
-.solo-host .solo-kick { color: var(--bad-text); font-size: 1.15rem; font-weight: 900; }
-.solo-host .empty-hint {
-  font-size: .8rem; color: var(--ink-faint); text-align: center; margin: .5rem 0 0;
-}
-
-.solo-host .solo-error {
-  text-align: center; font-weight: 800; color: var(--bad-text); font-size: .82rem;
-  background: var(--bad-soft); border: 1px solid var(--bad-edge);
-  border-radius: var(--r-sm); padding: .5rem; margin: .5rem 0 0;
-}
-
-/* ---- Top bar: room state and sound ------------------------------------ */
-.solo-host .topbar-right { align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-.solo-host .state-pill {
-  display: inline-flex; align-items: center; gap: .45rem;
-  max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
-}
-.solo-host .state-pill::before {
-  content: ''; flex: none;
-  width: .5rem; height: .5rem; border-radius: 50%;
-  background: var(--ink-faint);
-}
-.solo-host .state-pill[data-state="armed"] {
-  color: var(--good); border-color: var(--good-edge); background: var(--good-soft);
-}
-.solo-host .state-pill[data-state="armed"]::before {
-  background: var(--good); box-shadow: 0 0 10px var(--good);
-  animation: stage-dot 1.2s ease-in-out infinite;
-}
-.solo-host .state-pill[data-state="hit"] {
-  color: var(--on-accent); background: var(--warn); border-color: var(--warn);
-}
-.solo-host .state-pill[data-state="hit"]::before { background: var(--on-accent); }
-
-.solo-host .pill-btn {
-  font-family: inherit; cursor: pointer;
-  transition: color .15s ease, border-color .15s ease;
-}
-.solo-host .pill-btn[aria-pressed="false"] { color: var(--ink-faint); border-style: dashed; }
-
-/* ---- Keyboard hints ------------------------------------------------------ */
-.solo-host kbd {
-  display: inline-grid; place-items: center;
-  min-width: 1.35rem; height: 1.35rem; padding: 0 .3rem;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: .68rem; font-weight: 700; line-height: 1;
-  direction: ltr;
-  color: inherit; opacity: .6;
-  border: 1px solid currentColor; border-bottom-width: 2px;
-  border-radius: .3rem;
-}
-.solo-host .btn kbd { margin-inline-start: .15rem; }
-.solo-host .diff-pill kbd {
-  margin: .2rem 0 0;
-  min-width: 1.1rem; height: 1.1rem; font-size: .6rem;
-}
+.solo-host .stage-card { display: flex; flex-direction: column; gap: var(--space-5); }
+.solo-host .winner-box { min-height: 112px; }
+.solo-host .winner-box.hit { font-size: clamp(26px, 3vw, 40px); }
+.solo-host .winner-box .winner-ms:empty { display: none; }
+.solo-host .press-order:empty { display: none; }
+.solo-host .press-order .press-team { font-weight: 700; opacity: .75; }
+.solo-host .press-order .solo-ms { font-weight: 700; color: inherit; opacity: .75; font-variant-numeric: tabular-nums; }
+.solo-host .solo-controls { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
+.solo-host .primary-row .btn { flex: 1 1 12rem; }
+.solo-host .btn-award { --btn-fill: var(--highlight); --btn-ink: var(--on-fill); }
+.solo-host .btn-award kbd, .solo-host .btn-primary kbd { border-color: #1b1b1b; background: #ffffff; color: #1b1b1b; }
+.solo-host .timer-row { display: flex; gap: var(--space-3); align-items: center; justify-content: center; flex-wrap: wrap; }
+.solo-host .timer-row .timer-display { font-size: 48px; padding: 4px 16px 8px; box-shadow: var(--shadow-sm); }
+.solo-host .minor-row { padding-top: var(--space-4); border-top: var(--outline-2) dashed var(--outline); }
 .solo-host .kbd-legend {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem .9rem;
-  margin: 0; padding-top: .75rem;
-  border-top: 1px solid var(--stroke);
-  font-size: .75rem; color: var(--ink-faint);
+  margin: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4);
+  font: 700 13px/1.4 var(--font-sans); color: var(--ink-muted);
 }
-.solo-host .kbd-legend span { display: inline-flex; align-items: center; gap: .2rem; }
-.solo-host .kbd-legend kbd { opacity: .9; color: var(--ink-dim); }
-/* Touch screens have no keyboard: drop the hints entirely. */
+.solo-host .kbd-legend span { display: inline-flex; align-items: center; gap: 3px; }
+/* Phones have no keyboard: hide the shortcut hints there. */
 @media (hover: none), (pointer: coarse) {
   .solo-host kbd, .solo-host .kbd-legend { display: none; }
 }
 
-/* ---- Answer privacy -------------------------------------------------------- */
-.solo-host .solo-q-meta { align-items: center; }
-.solo-host .q-peek {
-  margin-inline-start: auto;
-  display: inline-flex; align-items: center; gap: .35rem;
-  font-family: inherit; font-size: .75rem; font-weight: 700;
-  color: var(--ink-dim); background: transparent;
-  border: 1px solid var(--stroke); border-radius: 999px;
-  padding: .2rem .6rem; cursor: pointer;
-}
-.solo-host .q-peek kbd { min-width: 1.05rem; height: 1.05rem; font-size: .58rem; }
-.solo-host .q-peek[aria-pressed="true"] { color: var(--warn); border-color: rgba(245,158,11,.4); }
-.solo-host .solo-question.answer-hidden .solo-q-answer b,
-.solo-host .solo-question.answer-hidden .solo-q-hint {
-  filter: blur(8px);
-  transition: filter .15s ease;
-}
-/* Peek: hover the answer row (mouse) or hold it (touch). */
-.solo-host .solo-question.answer-hidden .solo-q-answer:hover b,
-.solo-host .solo-question.answer-hidden .solo-q-answer:active b { filter: none; }
-.solo-host .solo-question.answer-hidden .solo-q-answer { cursor: help; }
+/* ---- The room: scores, players, voice, teams ---------------------- */
+.solo-host .scoreboard-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+.solo-host .scoreboard-head .card-label { margin: 0; }
 
-/* ---- Scores ------------------------------------------------------------------ */
-/* The sole leader: green points and a green outline, no extra words to
-   squeeze the team name in a narrow column. */
-.solo-host .score-list li.lead {
-  background: var(--good-soft);
-  box-shadow: inset 0 0 0 1px var(--good-edge);
+.solo-host .solo-player-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.solo-host .solo-player-list li {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 6px 8px 6px 6px;
+  font: 800 15px/1.3 var(--font-sans);
+  background: var(--card);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-md);
 }
-.solo-host .score-list li.lead .score-points { color: var(--good); }
-.solo-host .score-list li.bump-up .score-points { animation: score-up .6s cubic-bezier(.2,1.3,.4,1); }
-.solo-host .score-list li.bump-down .score-points { animation: score-down .5s ease; }
-@keyframes score-up {
-  0%   { transform: scale(1.5); color: var(--good); }
-  100% { transform: scale(1); }
+.solo-host .solo-player-list li.pressed { background: var(--highlight); color: var(--on-fill); }
+.solo-host .player-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.solo-host .press-team { font-size: 12px; font-weight: 700; opacity: .7; margin-inline-start: 4px; }
+.solo-host .player-dot { width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--team); border: 2px solid var(--outline); }
+.solo-host :is(.solo-mic, .solo-kick) {
+  width: 30px; height: 30px; flex: none;
+  display: grid; place-items: center;
+  font-size: 16px;
+  color: var(--ink); background: transparent;
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
-@keyframes score-down {
-  0%   { transform: translateY(-4px); color: var(--bad-text); }
-  100% { transform: none; }
-}
+.solo-host .solo-mic:not(.on) { color: var(--ink-muted); border-style: dashed; }
+.solo-host .solo-mic.on { background: var(--brand); color: var(--on-fill); }
+.solo-host .solo-kick { color: var(--danger-ink); }
+.solo-host li.pressed :is(.solo-mic, .solo-kick) { border-color: #1b1b1b; color: #1b1b1b; }
+.solo-host .empty-hint { margin: 0; padding: var(--space-4); text-align: center; font-size: 14px; font-weight: 700; color: var(--ink-muted); border: var(--outline-2) dashed var(--outline); border-radius: var(--radius-md); }
 
-/* ---- Toast --------------------------------------------------------------------- */
-.solo-host .host-toast {
-  position: fixed; z-index: 30;
-  inset-inline: 0; bottom: calc(1.25rem + env(safe-area-inset-bottom));
-  width: fit-content; max-width: calc(100vw - 2rem);
-  margin-inline: auto;
-  padding: .7rem 1.1rem;
-  border-radius: .8rem;
-  background: var(--panel-2); color: var(--ink);
-  border: 1px solid var(--stroke-hi);
-  box-shadow: 0 12px 40px rgba(0,0,0,.5);
-  font-size: .9rem; font-weight: 700; text-align: center;
-  animation: host-rise .25s var(--ease) both;
+.solo-host .voice-panel { display: flex; flex-direction: column; gap: var(--space-3); }
+.solo-host .voice-panel .card-label { margin: 0; }
+.solo-host .voice-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.solo-host .voice-status { font-size: 13px; font-weight: 700; }
+.solo-host .voice-status[data-state="live"] { color: var(--ink); }
+.solo-host .voice-status[data-state="error"] { color: var(--danger-ink); }
+.solo-host .voice-all.on { --btn-fill: var(--brand); --btn-ink: var(--on-fill); }
+.solo-host .voice-mode { display: flex; align-items: center; gap: var(--space-2); font: 700 14px/1.3 var(--font-sans); color: var(--ink-muted); }
+.solo-host .mic-meter {
+  display: inline-block; width: 56px; height: 10px; overflow: hidden;
+  background: var(--card); border: var(--outline-2) solid var(--outline); border-radius: var(--radius-pill);
 }
-.solo-host .host-toast[data-kind="warn"] { border-color: rgba(245,158,11,.45); }
-.solo-host .host-toast[data-kind="warn"]::before { content: '⚠ '; color: var(--warn); }
-
-/* ---- Question browser -------------------------------------------------- */
-/* It sits in the stage column, where a question is wide enough to read. */
-.solo-host .qbrowse-wrap { max-width: none; }
-.solo-host .qbrowse-title {
-  font-size: .72rem; font-weight: 800; letter-spacing: .12em; color: var(--ink-faint);
-}
-.solo-host .qbrowse-tab {
-  background: var(--panel-2); border: 1px solid var(--stroke);
-  color: var(--ink); border-radius: var(--r-sm); font-size: .85rem;
-}
-.solo-host .qbrowse-tab.active {
-  background: var(--good); border-color: var(--good); color: var(--on-accent);
-}
-.solo-host .qbrowse-tab-count { color: inherit; }
-.solo-host .qbrowse-list { max-height: min(50vh, 32rem); }
-.solo-host .qbrowse-item {
-  background: var(--panel-2); border: 1px solid var(--stroke); border-radius: var(--r-md);
-}
-.solo-host .qbrowse-q { font-size: 1.02rem; }
-.solo-host .qbrowse-a { color: var(--ink-dim); }
-.solo-host .qbrowse-a b { color: var(--good); }
-.solo-host .qbrowse-tags,
-.solo-host .qbrowse-status { color: var(--ink-faint); }
-.solo-host .qbrowse-empty { color: var(--ink-dim); }
-.solo-host .qbrowse-ask {
-  background: var(--good); border-color: var(--good); color: var(--on-accent);
-  border-radius: var(--r-sm); font-size: .85rem; padding: .5rem .8rem;
-}
-.solo-host .qbrowse-more {
-  color: var(--ink-dim); border: 1px solid var(--stroke);
-  border-radius: var(--r-sm); font-size: .8rem; padding: .4rem .8rem;
+.solo-host .mic-meter i { display: block; height: 100%; width: 0; background: var(--brand); }
+.solo-host .mic-meter[data-open="0"] i { background: var(--ink-muted); }
+.solo-host select {
+  flex: 1;
+  min-height: 40px;
+  padding: 6px 10px;
+  font: 800 14px/1.2 var(--font-sans);
+  color: var(--ink); background: var(--card);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
 }
 
-/* On a phone the row stacks: the text first, the ask button under it. */
-@media (max-width: 40rem) {
-  .solo-host .qbrowse-item { flex-direction: column; align-items: stretch; gap: .5rem; }
-  .solo-host .qbrowse-ask { width: 100%; }
+.solo-host .teams-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.solo-host .teams-head .card-label { margin: 0; }
+.solo-host .teams-toggle { display: flex; align-items: center; gap: 6px; font: 800 14px/1.3 var(--font-sans); cursor: pointer; }
+.solo-host .teams-toggle input { width: 18px; height: 18px; accent-color: var(--brand); }
+.solo-host .teams-rows { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-4) 0; }
+.solo-host .team-row { display: flex; align-items: center; gap: var(--space-2); }
+.solo-host .team-row .color-swatch { width: 34px; height: 34px; flex: none; }
+.solo-host .team-name-input {
+  flex: 1; min-width: 0;
+  min-height: 40px; padding: 6px 10px;
+  font: 800 15px/1.3 var(--font-sans);
+  color: var(--ink); background: var(--card);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
+}
+.solo-host .team-name-input::placeholder { color: var(--ink-muted); }
+.solo-host .teams-actions { display: flex; gap: var(--space-2); }
+.solo-host .solo-error {
+  margin: var(--space-3) 0 0; padding: 8px 12px;
+  font: 800 13px/1.4 var(--font-sans);
+  color: var(--on-fill); background: var(--danger-soft);
+  border: var(--outline-2) solid var(--outline); border-radius: var(--radius-sm);
 }
 
-/* ---- Hover (pointer devices only, so taps don't leave stuck states) ---- */
-@media (hover: hover) {
-  .solo-host .letter-btn:hover:not(:disabled):not(.active) { border-color: var(--stroke-hi); }
-  .solo-host .diff-pill.easy:hover:not(:disabled)   { border-color: var(--good); background: var(--good-soft); }
-  .solo-host .diff-pill.medium:hover:not(:disabled) { border-color: var(--warn); background: var(--warn-soft); }
-  .solo-host .diff-pill.hard:hover:not(:disabled)   { border-color: var(--bad);  background: var(--bad-soft); }
-  .solo-host .timer-btn:hover:not(:disabled) { border-color: var(--warn); background: var(--warn-soft); }
-  .solo-host .primary-row :is(.btn-primary, .btn-award):hover:not(:disabled) { filter: brightness(1.08); }
-  .solo-host .primary-row .btn-next:hover:not(:disabled) { background: #232730; }
-  .solo-host .minor-row .btn:hover:not(:disabled) { color: var(--ink); border-color: var(--stroke-hi); background: transparent; }
-  .solo-host .minor-row .btn-danger:hover:not(:disabled) { color: var(--bad-text); border-color: var(--bad); background: var(--bad-soft); }
-  .solo-host .score-btn:hover:not(:disabled) { border-color: var(--good); background: var(--good-soft); }
-  .solo-host .voice-panel .btn:hover:not(:disabled):not(.on) { border-color: var(--stroke-hi); background: #232730; }
-  .solo-host .teams-actions .btn:hover:not(:disabled) { border-color: var(--stroke-hi); }
-  .solo-host .teams-actions .btn-primary:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--good); }
-  .solo-host .qr-fold summary:hover { color: var(--ink); }
-  .solo-host .solo-mic:hover { background: rgba(255,255,255,.06); opacity: 1; }
-  .solo-host .solo-kick:hover { background: var(--bad-soft); }
-  .solo-host .pill-btn:hover { color: var(--ink); border-color: var(--stroke-hi); }
-  .solo-host .q-peek:hover { color: var(--ink); border-color: var(--stroke-hi); }
-  .solo-host .qbrowse-item:hover { border-color: var(--stroke-hi); }
-  .solo-host .qbrowse-tab:hover:not(.active) { border-color: var(--stroke-hi); }
-  .solo-host .qbrowse-ask:hover:not(:disabled) { filter: brightness(1.08); }
-  .solo-host .qbrowse-more:hover:not(:disabled) { color: var(--ink); border-color: var(--stroke-hi); }
-}
+/* The Cell presenter's frame rule does not apply here. */
+.solo-host.presenter { min-height: 100vh; }
 
-@media (prefers-reduced-motion: reduce) {
-  .solo-host *, .solo-host *::before, .solo-host *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
+/* ---- Winner box: the person is the headline, the team a tag under it -- */
+.solo-host .winner-box #winner-name { min-width: 0; }
+.solo-host .winner-box .win-person { display: block; }
+.solo-host .win-team {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 10px;
+  font: 800 13px/1.4 var(--font-sans);
+  color: #1b1b1b; background: #ffffff;
+  border: var(--outline-2) solid #1b1b1b;
+  border-radius: var(--radius-pill);
 }
+.solo-host .btn-award .win-team { margin: 0 6px 0 0; font-size: 12px; }
+
+/* The state pill names who pressed, then their team, smaller. */
+.solo-host .state-pill .pill-team { margin-inline-start: 4px; font-size: 12px; font-weight: 700; opacity: .8; }
+.solo-host .state-pill .pill-team::before { content: '· '; }
+
+/* The legacy question classes still set by old markup. */
+.solo-host .q-card .q-answer b { font-weight: 900; }
+.solo-host .solo-player-list .who { flex: 1; min-width: 0; font-size: 15px; }
+.solo-host .qbrowse-or { margin-top: var(--space-5); }
+/* Team names wrap instead of being cut to "الفريق ا…". */
+.solo-host .score-list .score-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }

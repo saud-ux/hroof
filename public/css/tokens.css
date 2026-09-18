@@ -1,0 +1,174 @@
+/* ------------------------------------------------------------------
+   الزر — design tokens (generated from the design system's tokens.json).
+   Light is the default; the theme button sets data-theme="dark" on <html>.
+   ------------------------------------------------------------------ */
+
+/* Tajawal, self-hosted so the app still works with no internet on a LAN.
+   Arabic and Latin are split by unicode-range: a phone only downloads the
+   Arabic cut unless a Latin character actually appears. */
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-400-arabic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-400-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-500-arabic.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-500-latin.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-700-arabic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-700-latin.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-800-arabic.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-800-latin.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-900-arabic.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Tajawal';
+  src: url('/fonts/Tajawal-900-latin.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #fffaf0;
+  --paper-deep: #f4efe4;
+  --dot: #e6dac2;
+  --card: #ffffff;
+  --card-sunken: #f7f1e3;
+  --ink: #1b1b1b;
+  --ink-muted: #5c5647;
+  --outline: #1b1b1b;
+  --on-fill: #1b1b1b;
+  --brand: #22c55e;
+  --brand-soft: #bbf7d0;
+  --highlight: #fde68a;
+  --sky-soft: #bae6fd;
+  --danger: #ef4444;
+  --danger-soft: #fecaca;
+  --danger-ink: #c81e1e;
+  --focus: #2563eb;
+  --scrim: rgba(27, 27, 27, 0.55);
+  --team-green: #22c55e;
+  --team-orange: #fb923c;
+  --team-blue: #60a5fa;
+  --team-purple: #c084fc;
+  --team-yellow: #facc15;
+  --team-pink: #f472b6;
+  --team-teal: #2dd4bf;
+  --team-red: #f87171;
+  --shadow-sm: -2px 2px 0 #1b1b1b;
+  --shadow-md: -4px 4px 0 #1b1b1b;
+  --shadow-lg: -6px 6px 0 #1b1b1b;
+  --shadow-buzzer: 0 10px 0 #1b1b1b;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --outline-2: 2px;
+  --outline-3: 3px;
+  --outline-4: 4px;
+  --font-sans: 'Tajawal', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* The player's / team's colour. Scripts set --team-current on <html>. */
+  --team: var(--team-current, var(--brand));
+
+  /* Legacy names still used by inline styles and the questions page. */
+  --bg: var(--paper);
+  --surface: var(--card);
+  --surface-2: var(--card-sunken);
+  --border: var(--outline);
+  --text: var(--ink);
+  --text-muted: var(--ink-muted);
+  --muted: var(--ink-muted);
+  --success: var(--brand);
+  --difficulty-easy: var(--brand);
+  --difficulty-medium: #f59e0b;
+  --difficulty-hard: var(--danger);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #17150f;
+  --paper-deep: #100e0a;
+  --dot: #2b271e;
+  --card: #221f18;
+  --card-sunken: #1a1712;
+  --ink: #f6eedd;
+  --ink-muted: #b8ae99;
+  --outline: #e9dfc9;
+  --danger-ink: #fca5a5;
+  --focus: #93c5fd;
+  --scrim: rgba(0, 0, 0, 0.7);
+  --shadow-sm: -2px 2px 0 #e9dfc9;
+  --shadow-md: -4px 4px 0 #e9dfc9;
+  --shadow-lg: -6px 6px 0 #e9dfc9;
+  --shadow-buzzer: 0 10px 0 #e9dfc9;
+}
