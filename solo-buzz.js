@@ -3,7 +3,9 @@
 // its own state. People open /buzz, type a name, and race to press.
 // The first press wins the round and locks everybody else out.
 
-const { ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom } = require('./questions-index');
+const {
+  ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom, pageOf, takeById,
+} = require('./questions-index');
 
 const MAX_PLAYERS = 200;
 const MAX_NAME = 24;
@@ -297,20 +299,44 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       socket.emit('solo:state', snapshot(true));
     });
 
-    // Pull a question from the bank and open the round with it in one step.
-    socket.on('solo:pickQuestion', ({ difficulty, letter } = {}) => {
+    // The host reads a letter's questions and their answers before choosing;
+    // the list arrives a page at a time because a letter like ا has hundreds.
+    socket.on('solo:browseQuestions', ({ difficulty, letter, offset, limit } = {}) => {
       if (!socket.data.soloHost) return;
       if (!DIFFICULTIES.includes(difficulty)) return;
       if (letter && !ARABIC_LETTERS.includes(letter)) return;
-
-      const q = pickFrom({
+      socket.emit('solo:questionPage', pageOf({
         index: letterIndex,
         byDifficulty,
         difficulty,
         letter: letter || null,
         usedIds: room.usedIds,
-      });
-      if (!q) { socket.emit('solo:poolEmpty', { difficulty, letter: letter || null }); return; }
+        offset,
+        limit,
+      }));
+    });
+
+    // Pull a question from the bank and open the round with it in one step.
+    // questionId asks that exact question; without it one is drawn at random.
+    socket.on('solo:pickQuestion', ({ difficulty, letter, questionId } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (letter && !ARABIC_LETTERS.includes(letter)) return;
+
+      let q;
+      if (typeof questionId === 'string' && questionId) {
+        q = takeById({ questions, usedIds: room.usedIds, id: questionId });
+        if (!q) { socket.emit('solo:questionUnavailable', { id: questionId }); return; }
+      } else {
+        if (!DIFFICULTIES.includes(difficulty)) return;
+        q = pickFrom({
+          index: letterIndex,
+          byDifficulty,
+          difficulty,
+          letter: letter || null,
+          usedIds: room.usedIds,
+        });
+        if (!q) { socket.emit('solo:poolEmpty', { difficulty, letter: letter || null }); return; }
+      }
 
       room.question = q;
       room.round += 1;

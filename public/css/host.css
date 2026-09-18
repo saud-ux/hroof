@@ -695,6 +695,45 @@
 .solo-host .host-toast[data-kind="warn"] { border-color: rgba(245,158,11,.45); }
 .solo-host .host-toast[data-kind="warn"]::before { content: '⚠ '; color: var(--warn); }
 
+/* ---- Question browser -------------------------------------------------- */
+/* It sits in the stage column, where a question is wide enough to read. */
+.solo-host .qbrowse-wrap { max-width: none; }
+.solo-host .qbrowse-title {
+  font-size: .72rem; font-weight: 800; letter-spacing: .12em; color: var(--ink-faint);
+}
+.solo-host .qbrowse-tab {
+  background: var(--panel-2); border: 1px solid var(--stroke);
+  color: var(--ink); border-radius: var(--r-sm); font-size: .85rem;
+}
+.solo-host .qbrowse-tab.active {
+  background: var(--good); border-color: var(--good); color: var(--on-accent);
+}
+.solo-host .qbrowse-tab-count { color: inherit; }
+.solo-host .qbrowse-list { max-height: min(50vh, 32rem); }
+.solo-host .qbrowse-item {
+  background: var(--panel-2); border: 1px solid var(--stroke); border-radius: var(--r-md);
+}
+.solo-host .qbrowse-q { font-size: 1.02rem; }
+.solo-host .qbrowse-a { color: var(--ink-dim); }
+.solo-host .qbrowse-a b { color: var(--good); }
+.solo-host .qbrowse-tags,
+.solo-host .qbrowse-status { color: var(--ink-faint); }
+.solo-host .qbrowse-empty { color: var(--ink-dim); }
+.solo-host .qbrowse-ask {
+  background: var(--good); border-color: var(--good); color: var(--on-accent);
+  border-radius: var(--r-sm); font-size: .85rem; padding: .5rem .8rem;
+}
+.solo-host .qbrowse-more {
+  color: var(--ink-dim); border: 1px solid var(--stroke);
+  border-radius: var(--r-sm); font-size: .8rem; padding: .4rem .8rem;
+}
+
+/* On a phone the row stacks: the text first, the ask button under it. */
+@media (max-width: 40rem) {
+  .solo-host .qbrowse-item { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .solo-host .qbrowse-ask { width: 100%; }
+}
+
 /* ---- Hover (pointer devices only, so taps don't leave stuck states) ---- */
 @media (hover: hover) {
   .solo-host .letter-btn:hover:not(:disabled):not(.active) { border-color: var(--stroke-hi); }
@@ -715,6 +754,10 @@
   .solo-host .solo-kick:hover { background: var(--bad-soft); }
   .solo-host .pill-btn:hover { color: var(--ink); border-color: var(--stroke-hi); }
   .solo-host .q-peek:hover { color: var(--ink); border-color: var(--stroke-hi); }
+  .solo-host .qbrowse-item:hover { border-color: var(--stroke-hi); }
+  .solo-host .qbrowse-tab:hover:not(.active) { border-color: var(--stroke-hi); }
+  .solo-host .qbrowse-ask:hover:not(:disabled) { filter: brightness(1.08); }
+  .solo-host .qbrowse-more:hover:not(:disabled) { color: var(--ink); border-color: var(--stroke-hi); }
 }
 
 @media (prefers-reduced-motion: reduce) {

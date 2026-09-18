@@ -6,7 +6,9 @@ const express = require('express');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
 const { attachSoloBuzzer } = require('./solo-buzz');
-const { ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom } = require('./questions-index');
+const {
+  ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom, pageOf, takeById,
+} = require('./questions-index');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -390,15 +392,41 @@ io.on('connection', (socket) => {
     endMatch();
   });
 
-  // ---- Pick difficulty -----------------------------------------------------
-  socket.on('presenter:pickDifficulty', ({ difficulty, letter } = {}) => {
+  // ---- Browse the letter's questions before asking one ---------------------
+  // The presenter reads the questions and their answers first, then picks the
+  // one to ask; the random pick stays available as a shortcut.
+  socket.on('presenter:browseQuestions', ({ difficulty, letter, offset, limit } = {}) => {
+    if (socket.data.role !== 'presenter') return;
     if (!DIFFICULTIES.includes(difficulty)) return;
+    if (letter && !ARABIC_LETTERS.includes(letter)) return;
+    socket.emit('questions:page', pageOf({
+      index: letterIndex,
+      byDifficulty,
+      difficulty,
+      letter: letter || null,
+      usedIds: state.usedQuestionIds,
+      offset,
+      limit,
+    }));
+  });
+
+  // ---- Pick a question -----------------------------------------------------
+  // With questionId the presenter asks that exact question; without it the
+  // server draws a random one from the difficulty (and letter) requested.
+  socket.on('presenter:pickDifficulty', ({ difficulty, letter, questionId } = {}) => {
     if (letter && !ARABIC_LETTERS.includes(letter)) return;
     if (state.status !== 'waiting') return;
     if (!bothMatchTeamsConnected()) return;
 
-    const q = pickQuestion(difficulty, letter);
-    if (!q) { socket.emit('pool:empty', { difficulty, letter: letter || null }); return; }
+    let q;
+    if (typeof questionId === 'string' && questionId) {
+      q = takeById({ questions, usedIds: state.usedQuestionIds, id: questionId });
+      if (!q) { socket.emit('question:unavailable', { id: questionId }); return; }
+    } else {
+      if (!DIFFICULTIES.includes(difficulty)) return;
+      q = pickQuestion(difficulty, letter);
+      if (!q) { socket.emit('pool:empty', { difficulty, letter: letter || null }); return; }
+    }
     state.currentQuestion = q;
     state.buzzWinner = null;
     state.triedTeamIds = [];

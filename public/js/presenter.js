@@ -23,6 +23,7 @@
   const pickerHint = document.getElementById('picker-hint');
   const diffButtons = Array.from(document.querySelectorAll('.diff-btn'));
   const letterStrip = document.getElementById('letter-strip');
+  const browserRoot = document.getElementById('question-browser');
   const countEls = {
     'سهل':   document.getElementById('count-easy'),
     'متوسط': document.getElementById('count-medium'),
@@ -50,6 +51,11 @@
   const settingsModal = document.getElementById('settings-modal');
   const resetBtn = document.getElementById('reset-btn');
   const closeSettings = document.getElementById('close-settings');
+
+  const DIFFS = ['سهل', 'متوسط', 'صعب'];
+
+  // Set once the question browser is built, below the functions that use it.
+  let qbrowse = null;
 
   const st = {
     roster: [],           // [{id,name,color,connected}]
@@ -181,16 +187,24 @@
     renderRosterGrid();
   }
 
+  const WAIT_HINT = 'بانتظار انضمام الفريقين للمباراة';
+
+  function bothTeamsConnected() {
+    return !!st.match && st.match.teamA.connected && st.match.teamB.connected;
+  }
+
+  function canPickQuestion() {
+    return bothTeamsConnected() && !st.hasQuestion && st.status === 'waiting';
+  }
+
   function updateDiffButtons() {
-    const bothConnected = !!st.match
-      && st.match.teamA.connected
-      && st.match.teamB.connected;
-    const enable = bothConnected && !st.hasQuestion && st.status === 'waiting';
+    const enable = canPickQuestion();
     diffButtons.forEach(btn => {
       btn.disabled = !enable;
-      btn.title = bothConnected ? '' : 'بانتظار انضمام الفريقين للمباراة';
+      btn.title = bothTeamsConnected() ? '' : WAIT_HINT;
     });
-    pickerHint.hidden = bothConnected;
+    pickerHint.hidden = bothTeamsConnected();
+    if (qbrowse) qbrowse.refreshGate();
   }
 
   function remainingFor(difficulty) {
@@ -240,6 +254,7 @@
     if (st.letter && !remainingForAnyDifficulty(st.letter)) st.letter = '';
     renderLetters();
     applyPools(null);
+    if (qbrowse) qbrowse.refresh(st.letter);
   }
 
   function remainingForAnyDifficulty(letter) {
@@ -294,6 +309,8 @@
     root.classList.remove('buzzed');
     root.style.setProperty('--border-flash', 'transparent');
     updateDiffButtons();
+    // The question just asked is gone from the bank — reload the list.
+    if (qbrowse) qbrowse.refresh();
     showView('picker');
   }
 
@@ -355,8 +372,31 @@
       st.letter = btn.dataset.letter || '';
       renderLetters();
       applyPools(null);
+      if (qbrowse) qbrowse.setLetter(st.letter);
     });
   }
+
+  // ---- The letter's questions, answers shown, so nothing is asked blind ----
+  qbrowse = (browserRoot && window.createQuestionBrowser)
+    ? window.createQuestionBrowser({
+      root: browserRoot,
+      socket,
+      requestEvent: 'presenter:browseQuestions',
+      pageEvent: 'questions:page',
+      difficulties: DIFFS,
+      counts: () => DIFFS.reduce((acc, d) => { acc[d] = remainingFor(d); return acc; }, {}),
+      canAsk: canPickQuestion,
+      blockedTitle: WAIT_HINT,
+      onAsk: (q) => {
+        unlockAudio();
+        socket.emit('presenter:pickDifficulty', {
+          difficulty: q.difficulty,
+          letter: st.letter || undefined,
+          questionId: q.id,
+        });
+      },
+    })
+    : null;
 
   nextBtn.addEventListener('click', () => socket.emit('presenter:nextQuestion', {}));
 
@@ -486,6 +526,13 @@
   socket.on('session:reset', () => { window.location.href = '/host'; });
 
   socket.on('letters:update', (payload) => applyLetters(payload));
+
+  // The chosen question was already asked (double click, or a second presenter
+  // screen got there first) — reload the list so it disappears from it.
+  socket.on('question:unavailable', () => {
+    showToast('هذا السؤال استُخدم بالفعل — اختر سؤالًا آخر.');
+    if (qbrowse) qbrowse.refresh();
+  });
 
   socket.on('pool:empty', ({ difficulty, letter }) => {
     showToast(letter

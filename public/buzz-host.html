@@ -29,6 +29,7 @@
         <div class="letter-strip" id="letter-strip">
           <button class="letter-btn active" data-letter="">أي حرف</button>
         </div>
+        <p class="letter-caption qbrowse-or">سؤال عشوائي بحسب الصعوبة</p>
         <div class="solo-diff-row" id="diff-row">
           <button class="btn diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span><kbd>1</kbd></button>
           <button class="btn diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span><kbd>2</kbd></button>
@@ -51,6 +52,10 @@
 
     <!-- Middle: the round itself -->
     <section class="solo-stage">
+      <!-- Every question the chosen letter still has, answers included: the
+           host reads them here and asks the one they want. -->
+      <div class="card qbrowse-wrap" id="question-browser"></div>
+
       <div class="card solo-question" id="question-box" hidden>
         <div class="solo-q-meta">
           <span>الفئة: <b id="q-category">—</b></span>
@@ -156,6 +161,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/voice.js"></script>
+  <script src="/js/question-browser.js"></script>
   <script src="/js/buzz-host.js"></script>
 </body>
 </html>

@@ -56,8 +56,16 @@
   const saveTeamsBtn = document.getElementById('save-teams');
   const teamsError = document.getElementById('teams-error');
 
+  const browserRoot = document.getElementById('question-browser');
+
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
+
+  // Set once the question browser is built, below the functions that use it.
+  let qbrowse = null;
+  // The bank only changes when a question is taken; presses and joins also
+  // redraw the desk, and the list must not reload under the host's finger.
+  let lastPoolSig = '';
 
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
   const toArabic = (n) => String(n).replace(/\d/g, d => AR_DIGITS[Number(d)]);
@@ -359,12 +367,38 @@
     if (!btn || btn.disabled) return;
     st.letter = btn.dataset.letter || '';
     renderPicker();
+    if (qbrowse) qbrowse.setLetter(st.letter);
   });
 
   diffRow.addEventListener('click', (e) => {
     const btn = e.target.closest('.diff-pill');
     if (!btn || btn.disabled) return;
     socket.emit('solo:pickQuestion', { difficulty: btn.dataset.diff, letter: st.letter || undefined });
+  });
+
+  // ---- The letter's questions, answers shown, so nothing is asked blind ----
+  qbrowse = (browserRoot && window.createQuestionBrowser)
+    ? window.createQuestionBrowser({
+      root: browserRoot,
+      socket,
+      requestEvent: 'solo:browseQuestions',
+      pageEvent: 'solo:questionPage',
+      difficulties: DIFFS,
+      formatNumber: toArabic,
+      counts: () => DIFFS.reduce((acc, d) => { acc[d] = remainingFor(d); return acc; }, {}),
+      onAsk: (q) => {
+        socket.emit('solo:pickQuestion', {
+          difficulty: q.difficulty,
+          letter: st.letter || undefined,
+          questionId: q.id,
+        });
+      },
+    })
+    : null;
+
+  socket.on('solo:questionUnavailable', () => {
+    toast('هذا السؤال استُخدم بالفعل — اختر سؤالًا آخر.', 'warn');
+    if (qbrowse) qbrowse.refresh();
   });
 
   clearQBtn.addEventListener('click', () => socket.emit('solo:clearQuestion'));
@@ -520,6 +554,12 @@
       if (snap.poolCounts) st.poolCounts = snap.poolCounts;
       if (qpick) qpick.hidden = false;
       renderPicker();
+
+      const sig = JSON.stringify([snap.poolCounts || null, snap.letterCounts || null]);
+      if (sig !== lastPoolSig) {
+        lastPoolSig = sig;
+        if (qbrowse) qbrowse.refresh(st.letter);
+      }
     } else if (qpick && snap.hasBank === false) {
       qpick.hidden = true;
     }

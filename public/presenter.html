@@ -42,7 +42,7 @@
 
     <!-- View: difficulty picker (match started, no question) -->
     <section id="picker-view" class="picker-view" hidden>
-      <h2 id="picker-heading">اختر الحرف والصعوبة</h2>
+      <h2 id="picker-heading">اختر الحرف ثم السؤال</h2>
       <p class="picker-hint" id="picker-hint" hidden>بانتظار انضمام الفريقين للمباراة</p>
 
       <div class="letter-picker">
@@ -51,6 +51,11 @@
           <button class="letter-btn active" data-letter="">أي حرف</button>
         </div>
       </div>
+
+      <!-- Every question the chosen letter still has, answers included -->
+      <div class="qbrowse-wrap" id="question-browser"></div>
+
+      <p class="muted qbrowse-or">أو اسحب سؤالًا عشوائيًا:</p>
 
       <div class="difficulty-grid">
         <button class="diff-btn easy" data-diff="سهل" disabled>
@@ -109,6 +114,7 @@
   <audio id="timer-sound" src="/audio/timer-end.mp3" preload="auto" playsinline></audio>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/question-browser.js"></script>
   <script src="/js/presenter.js"></script>
 </body>
 </html>

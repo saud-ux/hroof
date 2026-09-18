@@ -68,16 +68,76 @@ function letterCounts(index, difficulty, usedIds) {
   return counts;
 }
 
-// Pick a random unused question, optionally constrained to a letter.
-function pickFrom({ index, byDifficulty, difficulty, letter, usedIds }) {
+// Everything still unused for a letter — or for the whole difficulty when no
+// letter is chosen. Bank order, so paging through it doesn't reshuffle.
+function listUnused({ index, byDifficulty, difficulty, letter, usedIds }) {
   const bucket = letter
     ? ((index[difficulty] || {})[letter] || [])
     : (byDifficulty[difficulty] || []);
-  const pool = bucket.filter(q => !usedIds.has(q.id));
+  return bucket.filter(q => !usedIds.has(q.id));
+}
+
+// Pick a random unused question, optionally constrained to a letter.
+function pickFrom({ index, byDifficulty, difficulty, letter, usedIds }) {
+  const pool = listUnused({ index, byDifficulty, difficulty, letter, usedIds });
   if (!pool.length) return null;
   const q = pool[Math.floor(Math.random() * pool.length)];
   usedIds.add(q.id);
   return q;
 }
 
-module.exports = { ARABIC_LETTERS, lettersOf, buildLetterIndex, letterCounts, pickFrom, normalizeLetter };
+// What the host needs to read a question before asking it: the text, the answer
+// and the tags around them. The options stay out — this list is for choosing,
+// not for playing.
+function previewOf(q) {
+  return {
+    id: q.id,
+    text: q.text,
+    answer: q.answer,
+    difficulty: q.difficulty,
+    category: q.category || '',
+    hint: q.hint || '',
+  };
+}
+
+// One page of that list. A letter like ا carries hundreds of questions, so the
+// host screen walks them a page at a time instead of receiving the whole bank.
+const MAX_PAGE = 50;
+const DEFAULT_PAGE = 24;
+
+function pageOf({ index, byDifficulty, difficulty, letter, usedIds, offset, limit }) {
+  const pool = listUnused({ index, byDifficulty, difficulty, letter, usedIds });
+  const size = Math.max(1, Math.min(Number(limit) || DEFAULT_PAGE, MAX_PAGE));
+  const start = Math.max(0, Math.min(Math.trunc(Number(offset) || 0), pool.length));
+  return {
+    difficulty,
+    letter: letter || '',
+    offset: start,
+    limit: size,
+    total: pool.length,
+    items: pool.slice(start, start + size).map(previewOf),
+  };
+}
+
+// Take one named question out of the pool. Returns null once it's used, so a
+// second click on the same row can't ask it twice.
+function takeById({ questions, usedIds, id }) {
+  if (typeof id !== 'string' || !id) return null;
+  const q = questions.find(x => x.id === id);
+  if (!q || usedIds.has(q.id)) return null;
+  usedIds.add(q.id);
+  return q;
+}
+
+module.exports = {
+  ARABIC_LETTERS,
+  lettersOf,
+  buildLetterIndex,
+  letterCounts,
+  listUnused,
+  pickFrom,
+  pageOf,
+  previewOf,
+  takeById,
+  normalizeLetter,
+};
