@@ -172,6 +172,26 @@
 
 .cell-map { margin: .2rem 0 .6rem; }
 
+/* بنك الأسئلة داخل لوحة الخلية */
+.cell-ask { margin-bottom: .6rem; }
+.cell-ask-btn {
+  width: 100%;
+  background: var(--panel-2, #1b1e25); color: var(--ink, #fafafa);
+  border: 1px solid var(--stroke-hi, rgba(255, 255, 255, .16));
+  border-radius: var(--r-md, .7rem);
+  font-weight: 800;
+}
+.cell-ask-btn::after { content: ' ▾'; opacity: .6; }
+.cell-ask-btn.open::after { content: ' ▴'; }
+.cell-ask-slot {
+  margin-top: .5rem;
+  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
+  border-radius: var(--r-md, .7rem);
+  padding: .6rem;
+  background: rgba(0, 0, 0, .18);
+}
+.cell-ask-slot .qbrowse-list { max-height: min(38vh, 24rem); }
+
 .cell-resolve {
   display: flex; flex-direction: column; gap: .45rem;
   background: var(--panel-2, #1b1e25);

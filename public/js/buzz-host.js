@@ -80,6 +80,9 @@
   const cellKeepBtn = document.getElementById('cell-keep');
   const cellNewBtn = document.getElementById('cell-new');
   const cellUndoBtn = document.getElementById('cell-undo');
+  const cellAskBtn = document.getElementById('cell-ask-btn');
+  const cellAskSlot = document.getElementById('cell-ask-slot');
+  const stageEl = document.querySelector('.solo-stage');
 
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
@@ -448,6 +451,29 @@
   const CELL_DIRS = ['أعلى ↕ أسفل', 'يمين ↔ يسار'];
   let cellMenuIndex = null;
   let cellTeamsSig = '';
+  let lastCellOpen = null;
+
+  // One question browser, two homes. In the cell game every control belongs to
+  // the board, so the list moves inside the cell panel instead of standing as
+  // its own card; the element travels, so the browser keeps its state.
+  function placeBrowser(mode) {
+    if (!browserRoot) return;
+    if (mode === 'cell') {
+      if (browserRoot.parentElement !== cellAskSlot) cellAskSlot.appendChild(browserRoot);
+      browserRoot.classList.remove('card');
+    } else {
+      if (browserRoot.parentElement !== stageEl) stageEl.insertBefore(browserRoot, questionBox);
+      browserRoot.classList.add('card');
+    }
+  }
+
+  function setAskOpen(open) {
+    cellAskSlot.hidden = !open;
+    cellAskBtn.setAttribute('aria-expanded', String(open));
+    cellAskBtn.classList.toggle('open', open);
+  }
+
+  cellAskBtn.addEventListener('click', () => setAskOpen(cellAskSlot.hidden));
 
   const cellGrid = (cellMapEl && window.createCellGrid)
     ? window.createCellGrid({
@@ -596,7 +622,11 @@
       b.classList.toggle('active', b.dataset.mode === snap.mode);
     });
     cellPanel.hidden = !on;
-    if (!on) { closeCellMenu(); return; }
+    // Each game shows its own controls and nothing else: the letter/difficulty
+    // card belongs to the question game, the board to the cell game.
+    placeBrowser(snap.mode);
+    if (qpick) qpick.hidden = on || snap.hasBank === false;
+    if (!on) { closeCellMenu(); lastCellOpen = null; return; }
     if (!cellGrid) return;
 
     const cell = snap.cell || {};
@@ -614,6 +644,19 @@
     }
 
     const openLetter = cell.open != null ? cellLetterAt(cell.open) : '';
+
+    // Opening a cell points the question list at its letter and unfolds it, so
+    // the host reads the questions for that letter without leaving the board.
+    if (cell.open !== lastCellOpen) {
+      lastCellOpen = cell.open;
+      st.letter = openLetter;
+      if (qbrowse) qbrowse.refresh(openLetter);
+      setAskOpen(cell.open != null);
+    }
+    cellAskBtn.textContent = openLetter
+      ? `اطرح سؤالًا بحرف ${openLetter}`
+      : 'اطرح سؤالًا (أي حرف)';
+
     const w = snap.winner;
     const showResolve = cell.open != null && !!w && !cell.win;
     cellResolve.hidden = !showResolve;
