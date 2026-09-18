@@ -104,6 +104,50 @@
 .cellgrid.is-interactive.has-win .cellgrid-svg .hex { cursor: default; }
 
 /* ==================================================================
+   الشخص والفريق شيئان مختلفان
+   الاسم يبقى نصًّا عاديًا، والفريق وسم بلونه بجانبه — لا يندمجان في سطر
+   واحد بنفس الخط في أي مكان: صندوق الفائز، ترتيب الضغطات، قائمة
+   المشاركين، شريط الحالة، وسطر الحكم على الخلية.
+   ================================================================== */
+.who { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; min-width: 0; }
+.who-person { font-weight: 800; }
+.team-tag {
+  flex: none;
+  font-size: .72rem; font-weight: 800; line-height: 1.6;
+  padding: .05rem .5rem; border-radius: 999px;
+  color: var(--tint, #22c55e);
+  background: color-mix(in srgb, var(--tint, #22c55e) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tint, #22c55e) 50%, transparent);
+  white-space: nowrap;
+}
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .team-tag { background: transparent; border-color: var(--tint, #22c55e); }
+}
+
+/* صندوق الفائز: الاسم هو العنوان، والفريق تحته وسمًا داكنًا على لون الفريق. */
+.solo-host .solo-winner-box .win-person { display: block; }
+.solo-host .win-team {
+  display: inline-block;
+  margin-top: .3rem;
+  font-size: .8rem; font-weight: 800;
+  padding: .12rem .6rem; border-radius: 999px;
+  background: rgba(0, 0, 0, .28);
+  color: rgba(7, 8, 10, .92);
+}
+/* اسم الفريق في لوحة النقاط يلتف بدل أن يُبتر بثلاث نقاط. */
+.solo-host.cell-mode .score-name {
+  white-space: normal; overflow: visible; text-overflow: clip;
+  font-size: .92rem; line-height: 1.25;
+}
+.solo-host.cell-mode .score-points { min-width: 2rem; font-size: 1.25rem; }
+
+.solo-host .state-pill .pill-team {
+  margin-inline-start: .35rem;
+  font-size: .72rem; font-weight: 700; opacity: .75;
+}
+.solo-host .state-pill .pill-team::before { content: '· '; }
+
+/* ==================================================================
    لوحة المقدم
    ================================================================== */
 /* اختيار اللعبة: بطاقتان واضحتان، وكل لعبة تعرض تحكمها وحده تحتهما. */

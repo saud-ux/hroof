@@ -97,6 +97,22 @@
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
   const toArabic = (n) => String(n).replace(/\d/g, d => AR_DIGITS[Number(d)]);
 
+  // Names come from the players' own phones, so they never go into innerHTML raw.
+  const esc = (t) => String(t == null ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  // A person and a team are two different things. The person keeps the plain
+  // name; the team is a tag in its own colour beside it, never merged into the
+  // same run of text.
+  function teamTag(name, color) {
+    return `<span class="team-tag" style="--tint:${esc(color) || '#22c55e'}">${esc(name)}</span>`;
+  }
+  function whoHtml(p) {
+    const person = `<span class="who-person">${esc(p.name)}</span>`;
+    return p.teamName ? person + teamTag(p.teamName, p.color) : person;
+  }
+
   fetch('/links')
     .then(r => r.json())
     .then(({ buzz }) => { shareLink.textContent = buzz; })
@@ -683,9 +699,9 @@
     if (showResolve) {
       const winnerTeam = w.teamId != null ? teamById(w.teamId) : null;
       const other = winnerTeam ? teams.find(t => t.id !== winnerTeam.id) : null;
-      cellResolveLabel.textContent = winnerTeam
-        ? `الحرف ${openLetter} — أول من ضغط: ${w.name} (${winnerTeam.name})`
-        : `الحرف ${openLetter} — أول من ضغط: ${w.name}`;
+      cellResolveLabel.innerHTML = `الحرف ${esc(openLetter)} — أول من ضغط: `
+        + `<span class="who-person">${esc(w.name)}</span>`
+        + (winnerTeam ? teamTag(winnerTeam.name, winnerTeam.color) : '');
       cellCorrectBtn.textContent = winnerTeam ? `✓ صحيحة — ${winnerTeam.name}` : '✓ إجابة صحيحة';
       cellCorrectBtn.disabled = !winnerTeam;
       cellOtherBtn.textContent = other ? `أعطها ${other.name}` : 'أعطها للفريق الآخر';
@@ -889,21 +905,26 @@
     const roomState = winner ? 'hit' : (snap.armed ? 'armed' : 'closed');
     if (stageCard) stageCard.dataset.state = roomState;
     statePill.dataset.state = roomState;
-    statePill.textContent = winner
-      ? `ضغط ${winner.teamName || winner.name}`
-      : (snap.armed ? 'الزر مفتوح' : 'الزر مقفل');
+    if (winner) {
+      statePill.innerHTML = `ضغط <b>${esc(winner.name)}</b>`
+        + (winner.teamName ? `<span class="pill-team">${esc(winner.teamName)}</span>` : '');
+    } else {
+      statePill.textContent = snap.armed ? 'الزر مفتوح' : 'الزر مقفل';
+    }
 
     // A new first press gets a sound, so the host can look at the players.
     const winnerKey = winner ? `${snap.round}:${winner.id}` : null;
     if (winnerKey && lastWinnerKey !== null && winnerKey !== lastWinnerKey) playBuzz();
     lastWinnerKey = winnerKey || '';
     if (winner) {
-      winnerName.textContent = winner.teamName ? `${winner.name} — ${winner.teamName}` : winner.name;
+      winnerName.innerHTML = `<span class="win-person">${esc(winner.name)}</span>`
+        + (winner.teamName ? `<span class="win-team">${esc(winner.teamName)}</span>` : '');
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
       winnerBox.style.background = winner.color || '';
       winnerBox.style.borderColor = 'transparent';
     } else {
       winnerName.textContent = snap.armed ? 'الزر مفتوح — بانتظار أول ضغطة' : 'الزر مقفل';
+      winnerName.innerHTML = winnerName.textContent;
       winnerMs.textContent = '';
       winnerBox.style.background = '';
       winnerBox.style.borderColor = '';
@@ -917,8 +938,8 @@
     snap.presses.forEach((p, i) => {
       const li = document.createElement('li');
       li.className = i === 0 ? 'first' : '';
-      const who = p.teamName ? `${p.name} <span class="press-team">${p.teamName}</span>` : p.name;
-      li.innerHTML = `<span>${who}</span><span class="solo-ms">${toArabic(p.ms)} م.ث</span>`;
+      li.innerHTML = `<span class="who">${whoHtml(p)}</span>`
+        + `<span class="solo-ms">${toArabic(p.ms)} م.ث</span>`;
       if (p.color) li.style.borderInlineStart = `4px solid ${p.color}`;
       pressOrder.appendChild(li);
     });
@@ -927,7 +948,13 @@
     renderScores(snap);
     const w = snap.winner;
     awardBtn.hidden = !w || !snap.winnerScoreKey;
-    if (w) awardLabel.textContent = `✓ نقطة لـ ${w.teamName || w.name}`;
+    // The point goes to the team when there is one, so the button names the
+    // team as a tag rather than gluing it to the word "نقطة".
+    if (w) {
+      awardLabel.innerHTML = w.teamName
+        ? `✓ نقطة لـ<span class="win-team">${esc(w.teamName)}</span>`
+        : `✓ نقطة لـ${esc(w.name)}`;
+    }
     if (Array.isArray(snap.palette) && snap.palette.length) palette = snap.palette;
     if (Array.isArray(snap.teams) && !editingTeams) {
       const on = snap.teams.length > 0;
@@ -955,8 +982,8 @@
     snap.players.forEach(p => {
       const li = document.createElement('li');
       const pressed = snap.presses.some(x => x.id === p.id);
-      const label = p.teamName ? `${p.name} <span class="press-team">${p.teamName}</span>` : p.name;
-      li.innerHTML = `<span class="player-dot" style="background:${p.color || 'transparent'}"></span><span>${label}</span>`;
+      li.innerHTML = `<span class="player-dot" style="background:${esc(p.color) || 'transparent'}"></span>`
+        + `<span class="who">${whoHtml(p)}</span>`;
       if (pressed) li.classList.add('pressed');
       const inVoice = voiceRoom.members.some(m => m.id === p.id);
       if (inVoice) {
