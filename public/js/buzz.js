@@ -1,5 +1,9 @@
 (() => {
-  const socket = io('/solo');
+  // WebSocket first. socket.io otherwise opens on HTTP long-polling and only
+  // upgrades a moment later, and every event sent in that window waits for the
+  // next poll — which is exactly the lag between the host opening a cell and
+  // the phones seeing it. Polling stays as the fallback if the upgrade fails.
+  const socket = io('/solo', { transports: ['websocket', 'polling'] });
 
   const teamView = document.getElementById('team-view');
   const teamCards = document.getElementById('team-cards');
@@ -14,10 +18,12 @@
   const nameError = document.getElementById('name-error');
   const lobbyCount = document.getElementById('lobby-count');
   const meName = document.getElementById('me-name');
+  const meTeam = document.getElementById('me-team');
+  const meSwitch = document.getElementById('me-switch');
+  const voiceBar = document.getElementById('voice-bar');
   const buzzer = document.getElementById('buzzer');
   const buzzerLabel = document.getElementById('buzzer-label');
   const winnerLine = document.getElementById('winner-line');
-  const playersLine = document.getElementById('players-line');
   const voiceBtn = document.getElementById('voice-btn');
   const voiceStatus = document.getElementById('voice-status');
   const micMeter = document.getElementById('mic-meter');
@@ -40,6 +46,9 @@
   let pickedColor = null;    // free-for-all mode only
 
   const STORE_TEAM = 'solo-buzz-team';
+  const STORE_COLOR = 'solo-buzz-color';
+  const SKIP_AUTO = 'solo-buzz-skip-auto';   // sessionStorage: one load only
+  let autoJoined = false;
   let prevArmed = false;
   let prevWinnerId = null;
 
@@ -140,18 +149,59 @@
     document.documentElement.style.setProperty('--team-current', color || '#22c55e');
   }
 
+  let savedName = null;
   try {
-    const saved = localStorage.getItem(STORE_KEY);
-    if (saved) nameInput.value = saved;
+    savedName = localStorage.getItem(STORE_KEY);
+    if (savedName) nameInput.value = savedName;
     const savedTeam = localStorage.getItem(STORE_TEAM);
     if (savedTeam) pickedTeamId = Number(savedTeam) || null;
+    const savedColor = localStorage.getItem(STORE_COLOR);
+    if (savedColor) pickedColor = savedColor;
   } catch (_) { /* ignore */ }
 
   // ---- Entry screens ----
   function teamMode() { return Array.isArray(last.teams) && last.teams.length > 0; }
 
+  // Coming back to the page is not signing up again: the phone remembers who
+  // this is and walks straight back in with the same name, team and points.
+  // Being kicked, cleared out or moved between teams cancels that for one load,
+  // otherwise a phone would walk back into a room the host just emptied.
+  function autoJoin() {
+    if (me.id || autoJoined) return false;
+    if (!savedName) return false;
+    try { if (sessionStorage.getItem(SKIP_AUTO)) return false; } catch (_) { /* ignore */ }
+    if (teamMode()) {
+      if (pickedTeamId == null) return false;
+      if (!last.teams.some(t => t.id === pickedTeamId)) return false;
+    }
+    autoJoined = true;
+    socket.emit('solo:join', {
+      name: savedName,
+      teamId: teamMode() ? pickedTeamId : undefined,
+      color: teamMode() ? undefined : (pickedColor || undefined),
+    });
+    return true;
+  }
+
+  function skipAutoJoinOnce() {
+    try { sessionStorage.setItem(SKIP_AUTO, '1'); } catch (_) { /* ignore */ }
+  }
+
+  // The way back out: forget this phone's identity and start over.
+  meSwitch.addEventListener('click', () => {
+    try {
+      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(STORE_TEAM);
+      localStorage.removeItem(STORE_COLOR);
+    } catch (_) { /* ignore */ }
+    skipAutoJoinOnce();
+    socket.emit('solo:leave');
+    location.reload();
+  });
+
   function showEntry() {
     if (me.id) return;
+    if (autoJoin()) return;   // no entry screen at all for a returning phone
     if (teamMode() && pickedTeamId == null) {
       teamView.hidden = false;
       nameView.hidden = true;
@@ -232,7 +282,12 @@
     e.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return;
-    try { localStorage.setItem(STORE_KEY, name); } catch (_) { /* ignore */ }
+    savedName = name;
+    try {
+      localStorage.setItem(STORE_KEY, name);
+      if (!teamMode() && pickedColor) localStorage.setItem(STORE_COLOR, pickedColor);
+      sessionStorage.removeItem(SKIP_AUTO);
+    } catch (_) { /* ignore */ }
     socket.emit('solo:join', {
       name,
       teamId: teamMode() ? pickedTeamId : undefined,
@@ -294,10 +349,14 @@
     }
 
     renderMiniScores();
-    const mine = (last.scores || []).find(r => r.key === myScoreKey());
-    const scorePart = mine ? ` — نقاطك ${toArabic(mine.points)}` : '';
-    playersLine.textContent =
-      `جولة ${toArabic(last.round)} — ${toArabic(last.players.length)} مشارك${scorePart}`;
+
+    // The microphone only exists once the host opens the channel.
+    const voiceOn = !!last.voiceEnabled;
+    voiceBar.hidden = !voiceOn;
+    if (!voiceOn && voice && voice.isJoined()) {
+      voice.leave();
+      voiceBtn.textContent = '🎙 انضم للصوت';
+    }
   }
 
   // ---- Voice ----
@@ -376,7 +435,12 @@
     me.teamId = teamId ?? null;
     me.teamName = teamName || null;
     setButtonColor(color);
-    meName.textContent = teamName ? `${name} — ${teamName}` : name;
+    meName.textContent = name;
+    meTeam.hidden = !teamName;
+    if (teamName) {
+      meTeam.textContent = teamName;
+      meTeam.style.setProperty('--tint', color || '#22c55e');
+    }
     teamView.hidden = true;
     nameView.hidden = true;
     buzzView.hidden = false;
@@ -387,6 +451,11 @@
   });
 
   socket.on('solo:joinRejected', ({ reason }) => {
+    // An automatic re-entry that the room refuses falls back to the normal
+    // screens instead of leaving the phone on nothing.
+    autoJoined = true;
+    skipAutoJoinOnce();
+    showEntry();
     nameError.textContent = reason || 'تعذّر الدخول';
     nameError.hidden = false;
   });
@@ -439,12 +508,20 @@
     } catch (_) { /* a missing beep is not worth failing over */ }
   }
 
-  socket.on('solo:kicked', () => { location.reload(); });
+  socket.on('solo:kicked', () => { skipAutoJoinOnce(); location.reload(); });
   socket.on('solo:teamsChanged', () => {
     try { localStorage.removeItem(STORE_TEAM); } catch (_) { /* ignore */ }
+    skipAutoJoinOnce();
     location.reload();
   });
-  socket.on('solo:cleared', () => { location.reload(); });
+  socket.on('solo:cleared', () => { skipAutoJoinOnce(); location.reload(); });
+
+  // The host closed the voice channel: drop the mic without waiting for a state.
+  socket.on('voice:closed', () => {
+    if (voice.isJoined()) voice.leave();
+    voiceBtn.textContent = '🎙 انضم للصوت';
+    voiceBar.hidden = true;
+  });
 
   // Re-join automatically after a reconnect so a dropped phone comes back ready.
   // The team and colour must travel too: in team mode the server refuses a

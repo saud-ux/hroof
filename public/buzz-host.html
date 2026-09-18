@@ -25,10 +25,18 @@
     <!-- Right column (RTL): where each round starts -->
     <aside class="solo-side">
       <div class="card solo-mode" id="mode-card">
-        <p class="card-label">الطور</p>
+        <p class="card-label">اختر اللعبة</p>
         <div class="mode-row" id="mode-row">
-          <button class="mode-btn active" type="button" data-mode="buzz">الزر فقط</button>
-          <button class="mode-btn" type="button" data-mode="cell">خلية الحروف</button>
+          <button class="mode-btn active" type="button" data-mode="buzz">
+            <span class="mode-emoji">🔔</span>
+            <span class="mode-name">لعبة الأسئلة</span>
+            <span class="mode-sub">سؤال وزر فقط</span>
+          </button>
+          <button class="mode-btn" type="button" data-mode="cell">
+            <span class="mode-emoji">⬡</span>
+            <span class="mode-name">لعبة الخلية</span>
+            <span class="mode-sub">شبكة الحروف</span>
+          </button>
         </div>
       </div>
 
@@ -174,7 +182,14 @@
       </div>
 
       <div class="voice-panel card">
-        <p class="card-label">الصوت</p>
+        <div class="voice-head">
+          <p class="card-label">الصوت</p>
+          <label class="voice-enable">
+            <input type="checkbox" id="voice-enabled" />
+            <span>إتاحة الصوت للمشاركين</span>
+          </label>
+        </div>
+        <p class="voice-off-hint" id="voice-off-hint">الصوت مغلق — لا يظهر عند المشاركين.</p>
         <button id="voice-btn" class="btn btn-ghost btn-small">🎙 تشغيل الصوت</button>
         <span id="voice-status" class="voice-status muted"></span>
         <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>

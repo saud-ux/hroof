@@ -48,13 +48,17 @@
 
   <!-- 2) Buzzer -->
   <section id="buzz-view" class="buzzer-view" hidden>
-    <header class="team-banner" id="me-banner"><span id="me-name">—</span></header>
+    <header class="team-banner" id="me-banner">
+      <span class="me-person" id="me-name">—</span>
+      <span class="me-team" id="me-team" hidden></span>
+      <button class="me-switch" id="me-switch" type="button" title="تبديل اللاعب">تبديل</button>
+    </header>
     <div class="mini-scores" id="mini-scores" hidden></div>
 
     <!-- لعبة الخلية: نفس لوحة المقدم يراها اللاعب فوق زره، عرضًا فقط -->
     <div class="cell-board" id="cell-board" hidden>
       <div class="cellgrid" id="cell-grid"></div>
-      <p class="cell-board-open" id="cell-board-open" hidden>الحرف المطروح: <b id="cell-board-letter">—</b></p>
+      <p class="cell-board-open" id="cell-board-open" hidden>سؤال إجابته بحرف <b id="cell-board-letter">—</b></p>
       <p class="cell-board-win" id="cell-board-win" hidden></p>
     </div>
 
@@ -66,12 +70,11 @@
     </main>
     <footer class="solo-foot">
       <span id="winner-line" class="solo-winner-line"></span>
-      <div class="voice-bar">
+      <div class="voice-bar" id="voice-bar" hidden>
         <button id="voice-btn" class="btn btn-ghost btn-small">🎙 انضم للصوت</button>
         <span id="voice-status" class="voice-status muted"></span>
         <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>
       </div>
-      <span id="players-line" class="muted"></span>
     </footer>
   </section>
 

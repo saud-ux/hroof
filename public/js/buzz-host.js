@@ -1,5 +1,6 @@
 (() => {
-  const socket = io('/solo');
+  // WebSocket first, polling only as a fallback — see the note in buzz.js.
+  const socket = io('/solo', { transports: ['websocket', 'polling'] });
 
   const roundLabel = document.getElementById('round-label');
   const shareLink = document.getElementById('share-link');
@@ -48,6 +49,8 @@
   const micLevel = document.getElementById('mic-level');
   const voiceMode = document.getElementById('voice-mode');
   const voiceAllBtn = document.getElementById('voice-all-btn');
+  const voiceEnabled = document.getElementById('voice-enabled');
+  const voiceOffHint = document.getElementById('voice-off-hint');
 
   const teamsEnabled = document.getElementById('teams-enabled');
   const teamsEditor = document.getElementById('teams-editor');
@@ -338,6 +341,23 @@
   voiceMode.addEventListener('change', () => {
     socket.emit('voice:setMode', { mode: voiceMode.value });
   });
+
+  // The channel is closed until the host opens it, and closing it again takes
+  // every microphone down with it.
+  voiceEnabled.addEventListener('change', () => {
+    socket.emit('solo:setVoiceEnabled', { on: voiceEnabled.checked });
+  });
+
+  function renderVoiceGate(on) {
+    voiceEnabled.checked = on;
+    voiceOffHint.hidden = on;
+    [voiceBtn, voiceAllBtn, voiceMode].forEach(el => { el.disabled = !on; });
+    if (!on) {
+      voiceBtn.textContent = '🎙 تشغيل الصوت';
+      micMeter.hidden = true;
+      voiceStatus.textContent = '';
+    }
+  }
 
   // One tap to hand every phone an open mic, and another to take it back.
   voiceAllBtn.addEventListener('click', () => {
@@ -855,6 +875,7 @@
     }
     // طور الخلية يثبّت الغرفة على فريقين، فمحرر الفرق العام يُقفل حتى لا
     // يكسر القاعدة من الخلف.
+    renderVoiceGate(!!snap.voiceEnabled);
     teamsEnabled.disabled = snap.mode === 'cell';
     teamsEnabled.title = snap.mode === 'cell' ? 'طور الخلية يحتاج فريقين بالضبط' : '';
     renderCellPanel(snap);

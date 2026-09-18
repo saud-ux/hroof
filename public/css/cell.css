@@ -50,13 +50,16 @@
 .cellgrid-svg .hex.is-burn polygon { fill: var(--cell-burn); stroke: rgba(0, 0, 0, .3); }
 .cellgrid-svg .hex.is-burn text { fill: rgba(7, 8, 10, .6); }
 
-/* الخلية المفتوحة تومض حتى لا يخطئها أحد */
+/* الخلية المفتوحة تومض حتى لا يخطئها أحد. بلا انتقال تدريجي: تظهر في نفس
+   اللحظة التي تصل فيها الرسالة، فلا يبدو البث أبطأ مما هو. */
 .cellgrid-svg .hex.is-open polygon {
   fill: var(--cell-empty-2);
   stroke: #fafafa;
   stroke-width: 1.1;
+  transition: none;
   animation: cell-pulse 1.05s ease-in-out infinite alternate;
 }
+.cellgrid-svg .hex.is-open text { transition: none; }
 .cellgrid-svg .hex.is-open text { fill: #fff; }
 
 @keyframes cell-pulse {
@@ -103,19 +106,37 @@
 /* ==================================================================
    لوحة المقدم
    ================================================================== */
+/* اختيار اللعبة: بطاقتان واضحتان، وكل لعبة تعرض تحكمها وحده تحتهما. */
 .mode-row { display: flex; gap: .5rem; }
 .mode-btn {
-  flex: 1;
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: .1rem;
   font-family: inherit; font-weight: 800; font-size: .92rem;
-  padding: .6rem .5rem; border-radius: .7rem; cursor: pointer;
+  padding: .7rem .5rem; border-radius: .7rem; cursor: pointer;
   background: var(--panel-2, #1b1e25); color: var(--ink, #fafafa);
   border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
+  text-align: center;
 }
+.mode-btn .mode-emoji { font-size: 1.2rem; line-height: 1; }
+.mode-btn .mode-name { font-size: .92rem; }
+.mode-btn .mode-sub { font-size: .68rem; font-weight: 600; opacity: .7; }
 .mode-btn.active {
   background: var(--good, #22c55e); color: var(--on-accent, #07080a);
   border-color: var(--good, #22c55e);
 }
 .mode-btn:active:not(.active) { transform: scale(.97); }
+
+/* بوابة الصوت عند المقدم */
+.voice-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.voice-enable {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .76rem; font-weight: 700; color: var(--ink-dim, #9da1ac); cursor: pointer;
+  margin-bottom: .7rem;
+}
+.voice-enable input { accent-color: var(--good, #22c55e); width: 1rem; height: 1rem; }
+.voice-off-hint { margin: 0 0 .6rem; font-size: .74rem; color: var(--ink-faint, #858b98); }
+.voice-panel .btn:disabled,
+.voice-panel select:disabled { opacity: .35; cursor: not-allowed; }
 
 .cell-head {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -224,9 +245,10 @@
   }
 }
 
-/* في سفاري بشريط سفلي يكون الهامش الآمن العلوي صفرًا، فيلامس الشريط العلوي
-   حافة الشاشة وتغطيه الجزيرة. هذا حد أدنى يضمن نزوله تحتها. */
-.solo .buzzer-view.with-cell { padding-top: max(env(safe-area-inset-top), 1.15rem); }
+/* في سفاري بشريط سفلي يكون الهامش الآمن العلوي صفرًا، فتبدأ الصفحة من حافة
+   الشاشة وتغطي الجزيرة أولها. الجزيرة تنتهي عند ٥٠pt تقريبًا، وهذا الحد الأدنى
+   مع حشو الشريط نفسه يُنزل الاسم تحتها. */
+.solo .buzzer-view.with-cell { padding-top: max(env(safe-area-inset-top), 2.4rem); }
 
 /* وإن ضاقت الشاشة رغم ذلك، يُقتطع أسفل الصفحة لا أعلاها: الشاشة لا تنزلق
    أبدًا في هذا الطور، فالشريط العلوي يبقى مكانه تحت الجزيرة. */
@@ -235,6 +257,27 @@
   display: flex; align-items: center; gap: .5rem;
   font-size: .85rem; font-weight: 800; color: #cbd2de;
 }
+/* ---- شريط اللاعب: الاسم والفريق شيئان مختلفان ---- */
+.solo .team-banner .me-person { font-weight: 900; }
+.solo .team-banner .me-team {
+  font-size: .78rem; font-weight: 800;
+  padding: .18rem .55rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--tint, #22c55e) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tint, #22c55e) 55%, transparent);
+  color: var(--tint, #22c55e);
+  white-space: nowrap;
+}
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .solo .team-banner .me-team { background: transparent; border-color: var(--tint, #22c55e); }
+}
+.solo .team-banner .me-switch {
+  margin-inline-start: auto;
+  font-family: inherit; font-size: .68rem; font-weight: 700;
+  padding: .2rem .5rem; border-radius: .45rem; cursor: pointer;
+  background: transparent; color: #7c8496;
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+
 .cell-board-open b {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 2rem; height: 2rem; padding: 0 .4rem;

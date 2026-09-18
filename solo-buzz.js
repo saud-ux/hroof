@@ -58,6 +58,10 @@ function createRoom() {
     timer: null,      // { total, endsAt } while a countdown is running
 
     voice: {
+      // Off until the host opens it: most rounds are played in one room, where
+      // a voice channel is only noise. Players see no microphone at all while
+      // this is false.
+      enabled: false,
       members: new Set(),   // socket ids with an open mic connection
       granted: new Set(),   // ids the host explicitly un-muted
       mode: 'winner',       // winner | open | host
@@ -107,9 +111,11 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
   }
 
   // Who is allowed to transmit right now. Hosts always may; the rest depends on
-  // the mode and on whoever won the current round.
+  // the mode and on whoever won the current round. With voice switched off
+  // nobody transmits, whatever a client thinks its state is.
   function speakerIds() {
     const out = new Set();
+    if (!room.voice.enabled) return out;
     for (const id of room.voice.members) {
       const s = nsp.sockets.get(id);
       if (s && s.data.soloHost) out.add(id);
@@ -172,6 +178,8 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       // the grid is public: the host map and every phone draw the same board
       mode: room.mode,
       cell: cellPayload(),
+      // No microphone appears on a phone until the host opens the channel.
+      voiceEnabled: room.voice.enabled,
     };
     if (!forHost) return base;
     return {
@@ -659,8 +667,10 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       // A new session starts on the plain buzzer with an empty board.
       room.mode = 'buzz';
       room.cell = newCellState();
-      // Clearing the room means clearing everything: an open-mic mode left over
+      // Clearing the room means clearing everything: an open mic left over
       // from an earlier session must not carry into the next one.
+      room.voice.enabled = false;
+      room.voice.members.clear();
       room.voice.mode = 'winner';
       room.voice.granted.clear();
       room.scores = {};
@@ -671,7 +681,31 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     });
 
     // ---- Voice chat (WebRTC signalling only; audio never touches the server) --
+    // The host opens the channel; until then no one can join it, so no phone
+    // ever shows a microphone it cannot use.
+    socket.on('solo:setVoiceEnabled', ({ on } = {}) => {
+      if (!socket.data.soloHost) return;
+      const next = !!on;
+      if (room.voice.enabled === next) return;
+      room.voice.enabled = next;
+
+      if (!next) {
+        // Closing it drops every open mic rather than leaving one live.
+        for (const id of [...room.voice.members]) {
+          const s = nsp.sockets.get(id);
+          if (s) s.emit('voice:closed', {});
+          nsp.emit('voice:peerLeft', { id });
+        }
+        room.voice.members.clear();
+        room.voice.granted.clear();
+        room.voice.mode = 'winner';
+      }
+      broadcast();
+      broadcastVoice();
+    });
+
     socket.on('voice:join', () => {
+      if (!room.voice.enabled) return;
       room.voice.members.add(socket.id);
       broadcastVoice();
     });
