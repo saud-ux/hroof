@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#fde68a" />
+  <meta name="theme-color" content="#fde68a" data-fixed="1" />
   <meta name="color-scheme" content="light dark" />
   <title>الزر — شاشة المقدم</title>
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/tokens.css" />
   <link rel="stylesheet" href="/css/ui.css" />
   <link rel="stylesheet" href="/css/zir-base.css" />
@@ -19,6 +20,7 @@
       <span class="pill state-pill" id="state-pill" data-state="closed">الزر مقفل</span>
       <span class="pill" id="round-label">جولة ١</span>
       <span class="pill" id="players-pill">٠ مشارك</span>
+      <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="الوضع الداكن"></button>
       <button class="pill pill-btn" id="sound-btn" type="button" aria-pressed="true" title="صوت عند أول ضغطة" data-icon="bell">الصوت</button>
     </div>
   </header>

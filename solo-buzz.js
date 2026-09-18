@@ -348,7 +348,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
     // ---- Player ------------------------------------------------------------
     socket.on('solo:join', ({ name, color, teamId } = {}) => {
       const clean = cleanName(name);
-      if (!clean) { socket.emit('solo:joinRejected', { reason: 'اكتب اسمك أولاً' }); return; }
+      if (!clean) { socket.emit('solo:joinRejected', { reason: 'اكتب اسمك أولا' }); return; }
       if (room.players.length >= MAX_PLAYERS && !findPlayer(socket.id)) {
         socket.emit('solo:joinRejected', { reason: 'العدد اكتمل' });
         return;
@@ -358,7 +358,7 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       let team = null;
       if (room.teams.length) {
         team = room.teams.find(t => t.id === teamId);
-        if (!team) { socket.emit('solo:joinRejected', { reason: 'اختر فريقك أولاً' }); return; }
+        if (!team) { socket.emit('solo:joinRejected', { reason: 'اختر فريقك أولا' }); return; }
       }
 
       const finalName = uniqueName(clean, socket.id);

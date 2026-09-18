@@ -150,3 +150,14 @@ code {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---- Theme button (light is the default; dark only by choice) ------- */
+.theme-btn, .theme-btn[aria-pressed] { flex: none; border-style: solid; color: var(--ink); box-shadow: var(--shadow-sm); }
+.topbar .theme-btn { width: 36px; height: 36px; font-size: 18px; border-color: #1b1b1b; background: #ffffff; color: #1b1b1b; box-shadow: -2px 2px 0 #1b1b1b; }
+.theme-corner {
+  position: fixed; z-index: 50;
+  top: calc(var(--space-3) + env(safe-area-inset-top));
+  left: var(--space-3);
+  width: 38px; height: 38px; font-size: 18px;
+}
+body:has(.buzzer-view.win:not(.with-cell)) .theme-corner { background: #ffffff; color: #1b1b1b; border-color: #1b1b1b; box-shadow: -2px 2px 0 #1b1b1b; }

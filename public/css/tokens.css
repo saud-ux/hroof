@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------
    الزر — design tokens (generated from the design system's tokens.json).
-   Light is the default; dark follows the device, or data-theme on <html>.
+   Light is the default; the theme button sets data-theme="dark" on <html>.
    ------------------------------------------------------------------ */
 
 /* Tajawal, self-hosted so the app still works with no internet on a LAN.
@@ -154,26 +154,6 @@
   --difficulty-hard: var(--danger);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --paper: #17150f;
-    --paper-deep: #100e0a;
-    --dot: #2b271e;
-    --card: #221f18;
-    --card-sunken: #1a1712;
-    --ink: #f6eedd;
-    --ink-muted: #b8ae99;
-    --outline: #e9dfc9;
-    --danger-ink: #fca5a5;
-    --focus: #93c5fd;
-    --scrim: rgba(0, 0, 0, 0.7);
-    --shadow-sm: -2px 2px 0 #e9dfc9;
-    --shadow-md: -4px 4px 0 #e9dfc9;
-    --shadow-lg: -6px 6px 0 #e9dfc9;
-    --shadow-buzzer: 0 10px 0 #e9dfc9;
-  }
-}
 :root[data-theme="dark"] {
   color-scheme: dark;
   --paper: #17150f;

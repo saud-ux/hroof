@@ -337,7 +337,7 @@
     if (winner) {
       if (iWon) {
         buzzView.classList.add('win');
-        buzzerLabel.textContent = 'ضغطت أولاً!';
+        buzzerLabel.textContent = 'ضغطت أولا!';
       } else {
         buzzer.classList.add('locked');
         buzzerLabel.textContent = 'مقفل';
@@ -354,7 +354,7 @@
       } else {
         buzzer.classList.add('armed');
         buzzer.disabled = false;
-        buzzerLabel.textContent = 'بز!';
+        buzzerLabel.textContent = 'اضغط';
       }
     } else {
       winnerLine.textContent = '';
