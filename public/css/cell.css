@@ -205,9 +205,23 @@
 .solo .buzzer-view > .cell-board { flex: none; }
 .cell-board .cellgrid { display: flex; justify-content: center; max-width: 100%; }
 .cell-board .cellgrid-svg {
-  height: min(24dvh, 12rem);
+  height: min(33dvh, 16.5rem);
   width: auto;
   max-width: 100%;
+}
+
+/* في طور الخلية اللوحة هي البطل: القرص يصغر ليفسح لها، ويبقى هدفًا مريحًا
+   للإبهام — ومنطقة الزر كلها قابلة للضغط لا القرص وحده. */
+.solo .buzzer-view.with-cell .buzzer {
+  width: min(56vw, 30dvh);
+  height: min(56vw, 30dvh);
+}
+@supports (container-type: size) {
+  .solo .buzzer-view.with-cell .buzzer {
+    --disc: min(68cqi, calc(100cqb - var(--timer-h) - 1.5rem), 15rem);
+    width: var(--disc);
+    height: var(--disc);
+  }
 }
 
 /* في سفاري بشريط سفلي يكون الهامش الآمن العلوي صفرًا، فيلامس الشريط العلوي
@@ -234,7 +248,7 @@
 
 /* على شاشة قصيرة تصغر اللوحة أكثر حتى يبقى الزر كبيرًا */
 @media (max-height: 44rem) {
-  .cell-board .cellgrid-svg { height: min(22dvh, 9rem); }
+  .cell-board .cellgrid-svg { height: min(28dvh, 11rem); }
   .cell-board { padding-bottom: 0; }
 }
 
