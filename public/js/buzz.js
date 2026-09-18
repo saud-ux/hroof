@@ -39,6 +39,11 @@
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
   const toArabic = (n) => String(n).replace(/\d/g, d => AR_DIGITS[Number(d)]);
+
+  // Names come from other people's phones, so they never go into innerHTML raw.
+  const esc = (t) => String(t == null ? '' : t)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
   const me = { id: null, name: null, color: null, teamId: null, teamName: null };
   let last = { armed: false, winner: null, players: [], presses: [], round: 1, teams: [], palette: [] };
   let lastRound = null;
@@ -105,7 +110,7 @@
       const chip = document.createElement('span');
       chip.className = 'score-chip' + (r.key === mineKey ? ' me' : '');
       chip.style.setProperty('--tint', r.color || '#6b7280');
-      chip.innerHTML = `<b>${toArabic(r.points)}</b><span>${r.name}</span>`;
+      chip.innerHTML = `<b>${toArabic(r.points)}</b><span>${esc(r.name)}</span>`;
       miniScores.appendChild(chip);
     });
   }
@@ -221,7 +226,7 @@
       btn.className = 'team-card';
       btn.style.setProperty('--tint', t.color);
       btn.innerHTML = `
-        <span class="team-card-name">${t.name}</span>
+        <span class="team-card-name">${esc(t.name)}</span>
         <span class="team-card-status">${count ? `${toArabic(count)} لاعب` : 'لا أحد بعد'}</span>
       `;
       btn.addEventListener('click', () => {
@@ -329,9 +334,10 @@
         buzzer.classList.add('locked');
         buzzerLabel.textContent = 'مقفل';
       }
-      winnerLine.textContent = winner.teamName
-        ? `أول من ضغط: ${winner.name} — ${winner.teamName}`
-        : `أول من ضغط: ${winner.name}`;
+      winnerLine.innerHTML = `أول من ضغط: <span class="who-person">${esc(winner.name)}</span>`
+        + (winner.teamName
+          ? `<span class="team-tag" style="--tint:${esc(winner.color) || '#22c55e'}">${esc(winner.teamName)}</span>`
+          : '');
     } else if (last.armed) {
       winnerLine.textContent = '';
       if (iPressed) {

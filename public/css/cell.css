@@ -386,6 +386,12 @@
   display: flex; align-items: center; gap: .5rem;
   font-size: .85rem; font-weight: 800; color: #cbd2de;
 }
+/* سطر «أول من ضغط» على الجوال: الاسم ثم وسم الفريق، لا سطر واحد مدموج. */
+.solo .solo-winner-line {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: .4rem; flex-wrap: wrap;
+}
+
 /* ---- شريط اللاعب: الاسم والفريق شيئان مختلفان ---- */
 .solo .team-banner .me-person { font-weight: 900; }
 .solo .team-banner .me-team {
