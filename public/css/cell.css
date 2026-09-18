@@ -1,0 +1,239 @@
+/* ==================================================================
+   لعبة الخلية — الشبكة ولوحة التحكم
+   ملف مستقل تحمّله شاشة المقدم وشاشة اللاعب معًا، فلا يمس أنماط الزر.
+   الألوان عالية التباين ومناسبة للبث، والحروف كبيرة تُقرأ من بعيد.
+   ================================================================== */
+
+.cellgrid {
+  --cell-empty: #1b1f27;
+  --cell-empty-2: #232833;
+  --cell-line: rgba(255, 255, 255, .16);
+  --cell-line-hi: rgba(255, 255, 255, .55);
+  --cell-burn: #4b5563;
+  --cell-ink: #f4f6fb;
+  --cell-ink-on: #07080a;
+
+  display: block;
+  width: 100%;
+}
+
+.cellgrid-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: inherit;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+/* ---- خلية ---- */
+.cellgrid-svg .hex polygon {
+  fill: var(--cell-empty);
+  stroke: var(--cell-line);
+  stroke-width: .5;
+  transition: fill .18s ease, stroke .18s ease;
+}
+.cellgrid-svg .hex text {
+  font-size: 9.2px;
+  font-weight: 900;
+  fill: var(--cell-ink);
+  pointer-events: none;
+  user-select: none;
+  transition: fill .18s ease;
+}
+
+.cellgrid-svg .hex.is-a polygon,
+.cellgrid-svg .hex.is-b polygon { fill: var(--tint); stroke: rgba(0, 0, 0, .35); }
+.cellgrid-svg .hex.is-a text,
+.cellgrid-svg .hex.is-b text { fill: var(--cell-ink-on); }
+
+.cellgrid-svg .hex.is-burn polygon { fill: var(--cell-burn); stroke: rgba(0, 0, 0, .3); }
+.cellgrid-svg .hex.is-burn text { fill: rgba(7, 8, 10, .6); }
+
+/* الخلية المفتوحة تومض حتى لا يخطئها أحد */
+.cellgrid-svg .hex.is-open polygon {
+  fill: var(--cell-empty-2);
+  stroke: #fafafa;
+  stroke-width: 1.1;
+  animation: cell-pulse 1.05s ease-in-out infinite alternate;
+}
+.cellgrid-svg .hex.is-open text { fill: #fff; }
+
+@keyframes cell-pulse {
+  from { stroke-opacity: .45; }
+  to   { stroke-opacity: 1; }
+}
+
+/* تلوّن سريع عند أخذ الخلية */
+.cellgrid-svg .hex.just-taken {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cell-pop .26s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes cell-pop {
+  0%   { transform: scale(.72); opacity: .45; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* خط الفوز */
+.cellgrid-svg .hex.in-win polygon {
+  stroke: #ffffff;
+  stroke-width: 1.2;
+}
+/* الخط أبيض فوق ألوان الفرق نفسها، وتوهجه بلون الفريق: يُقرأ على الأخضر
+   والبرتقالي معًا ولا يذوب في لون الخلية. */
+.cellgrid-svg .cellgrid-winline {
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.cellgrid-svg .cellgrid-winline.on { opacity: 1; }
+.cellgrid.has-win .cellgrid-svg .hex:not(.in-win) polygon { opacity: .55; }
+
+/* أشرطة الحواف: أعلى/أسفل للفريق الأول، يمين/يسار للفريق الثاني */
+.cellgrid-edges rect { opacity: .85; }
+
+.cellgrid.is-interactive .cellgrid-svg .hex { cursor: pointer; }
+.cellgrid.is-interactive .cellgrid-svg .hex:hover polygon { stroke: var(--cell-line-hi); }
+.cellgrid.is-interactive.has-win .cellgrid-svg .hex { cursor: default; }
+
+/* ==================================================================
+   لوحة المقدم
+   ================================================================== */
+.mode-row { display: flex; gap: .5rem; }
+.mode-btn {
+  flex: 1;
+  font-family: inherit; font-weight: 800; font-size: .92rem;
+  padding: .6rem .5rem; border-radius: .7rem; cursor: pointer;
+  background: var(--panel-2, #1b1e25); color: var(--ink, #fafafa);
+  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
+}
+.mode-btn.active {
+  background: var(--good, #22c55e); color: var(--on-accent, #07080a);
+  border-color: var(--good, #22c55e);
+}
+.mode-btn:active:not(.active) { transform: scale(.97); }
+
+.cell-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: .75rem; flex-wrap: wrap;
+}
+.cell-status { font-size: .82rem; color: var(--ink-dim, #9da1ac); font-weight: 700; }
+.cell-status[data-tone="win"] { color: var(--good, #22c55e); }
+.cell-status[data-tone="open"] { color: #fafafa; }
+
+.cell-teams {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem; margin: .7rem 0;
+}
+.cell-team {
+  display: flex; align-items: center; gap: .45rem;
+  background: var(--panel-2, #1b1e25);
+  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
+  border-inline-start: 4px solid var(--tint, #22c55e);
+  border-radius: .6rem; padding: .45rem .55rem;
+}
+.cell-team .cell-team-name {
+  flex: 1; min-width: 0;
+  font-family: inherit; font-size: .88rem; font-weight: 800;
+  background: none; border: none; color: var(--ink, #fafafa);
+  padding: .15rem 0;
+}
+.cell-team .cell-team-name:focus { outline: none; border-bottom: 1px solid var(--stroke-hi, rgba(255,255,255,.3)); }
+.cell-team .cell-team-dir { font-size: .68rem; color: var(--ink-faint, #858b98); font-weight: 700; }
+.cell-swatch {
+  width: 1.15rem; height: 1.15rem; border-radius: .35rem; flex: none;
+  border: 1px solid rgba(255, 255, 255, .25); cursor: pointer; padding: 0;
+}
+
+.cell-map { margin: .2rem 0 .6rem; }
+
+.cell-resolve {
+  display: flex; flex-direction: column; gap: .45rem;
+  background: var(--panel-2, #1b1e25);
+  border: 1px solid var(--good-edge, rgba(34, 197, 94, .32));
+  border-radius: .7rem; padding: .6rem; margin-bottom: .6rem;
+}
+.cell-resolve-label { margin: 0; font-size: .74rem; color: var(--ink-faint, #858b98); font-weight: 800; letter-spacing: .06em; }
+.cell-resolve-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.cell-resolve-row .btn { flex: 1; min-width: 7rem; }
+.cell-btn-correct { background: var(--good, #22c55e); color: var(--on-accent, #07080a); border-color: var(--good, #22c55e); }
+.cell-btn-burn { background: var(--cell-burn, #4b5563); color: #fff; border-color: transparent; }
+
+.cell-menu {
+  background: var(--panel-2, #1b1e25);
+  border: 1px solid var(--stroke-hi, rgba(255, 255, 255, .16));
+  border-radius: .7rem; padding: .6rem; margin-bottom: .6rem;
+}
+.cell-menu-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .5rem; margin-bottom: .45rem;
+}
+.cell-menu-title { font-size: .85rem; font-weight: 800; }
+.cell-menu-title b { font-size: 1.15rem; }
+.cell-menu-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.cell-menu-row .btn { flex: 1; min-width: 6rem; }
+.cell-menu-close {
+  background: none; border: none; color: var(--ink-dim, #9da1ac);
+  font-size: 1.1rem; font-weight: 900; cursor: pointer; font-family: inherit;
+}
+
+.cell-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.cell-actions .btn { flex: 1; min-width: 7rem; }
+.cell-hint { margin: .55rem 0 0; font-size: .74rem; color: var(--ink-faint, #858b98); }
+
+.cell-win-banner {
+  margin: 0 0 .6rem; padding: .6rem .75rem; border-radius: .7rem;
+  background: var(--tint, #22c55e); color: #07080a;
+  font-weight: 900; text-align: center;
+  animation: cell-pop .3s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+/* ==================================================================
+   جوال اللاعب: الشبكة فوق الزر
+   ================================================================== */
+.cell-board {
+  padding: .6rem .75rem .2rem;
+  display: flex; flex-direction: column; align-items: center; gap: .4rem;
+}
+/* الشبكة تأخذ ارتفاعًا ثابتًا وتحسب عرضها منه، والزر يحتفظ بنصيبه من الشاشة
+   مهما صغرت: الضغط أهم من اللوحة على الجوال. */
+.solo .buzzer-view > .cell-board { flex: none; }
+.solo .buzzer-view.with-cell > .buzzer-main { min-height: 46dvh; }
+.cell-board .cellgrid { display: flex; justify-content: center; max-width: 100%; }
+.cell-board .cellgrid-svg {
+  height: min(32dvh, 15rem);
+  width: auto;
+  max-width: 100%;
+}
+.cell-board-open {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .85rem; font-weight: 800; color: #cbd2de;
+}
+.cell-board-open b {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2rem; height: 2rem; padding: 0 .4rem;
+  border-radius: .55rem; background: #fafafa; color: #07080a;
+  font-size: 1.25rem; font-weight: 900;
+}
+.cell-board-win {
+  font-size: .95rem; font-weight: 900; color: var(--tint, #22c55e);
+  text-align: center;
+}
+
+/* على شاشة قصيرة تصغر اللوحة أكثر حتى يبقى الزر كبيرًا */
+@media (max-height: 44rem) {
+  .cell-board .cellgrid-svg { height: min(24dvh, 10rem); }
+  .cell-board { padding-bottom: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cellgrid-svg .hex.is-open polygon,
+  .cellgrid-svg .hex.just-taken,
+  .cell-win-banner {
+    animation: none;
+  }
+}

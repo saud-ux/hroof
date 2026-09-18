@@ -12,6 +12,7 @@
   <title>الزر</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/player.css" />
+  <link rel="stylesheet" href="/css/cell.css" />
 </head>
 <body class="team solo">
   <!-- 1) Team picker (team mode only) -->
@@ -49,6 +50,14 @@
   <section id="buzz-view" class="buzzer-view" hidden>
     <header class="team-banner" id="me-banner"><span id="me-name">—</span></header>
     <div class="mini-scores" id="mini-scores" hidden></div>
+
+    <!-- لعبة الخلية: نفس لوحة المقدم يراها اللاعب فوق زره، عرضًا فقط -->
+    <div class="cell-board" id="cell-board" hidden>
+      <div class="cellgrid" id="cell-grid"></div>
+      <p class="cell-board-open" id="cell-board-open" hidden>الحرف المطروح: <b id="cell-board-letter">—</b></p>
+      <p class="cell-board-win" id="cell-board-win" hidden></p>
+    </div>
+
     <main class="buzzer-main">
       <span id="timer-display" class="timer-display big" hidden>—</span>
       <button id="buzzer" class="buzzer" aria-label="الزر">
@@ -68,6 +77,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/voice.js"></script>
+  <script src="/js/cell-grid.js"></script>
   <script src="/js/buzz.js"></script>
 </body>
 </html>

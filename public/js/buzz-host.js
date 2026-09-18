@@ -58,6 +58,26 @@
 
   const browserRoot = document.getElementById('question-browser');
 
+  // لعبة الخلية
+  const modeRow = document.getElementById('mode-row');
+  const cellPanel = document.getElementById('cell-panel');
+  const cellMapEl = document.getElementById('cell-map');
+  const cellTeamsEl = document.getElementById('cell-teams');
+  const cellStatus = document.getElementById('cell-status');
+  const cellWinBanner = document.getElementById('cell-win-banner');
+  const cellMenu = document.getElementById('cell-menu');
+  const cellMenuRow = document.getElementById('cell-menu-row');
+  const cellMenuLetter = document.getElementById('cell-menu-letter');
+  const cellMenuClose = document.getElementById('cell-menu-close');
+  const cellResolve = document.getElementById('cell-resolve');
+  const cellResolveLabel = document.getElementById('cell-resolve-label');
+  const cellCorrectBtn = document.getElementById('cell-correct');
+  const cellOtherBtn = document.getElementById('cell-other');
+  const cellBurnBtn = document.getElementById('cell-burn');
+  const cellKeepBtn = document.getElementById('cell-keep');
+  const cellNewBtn = document.getElementById('cell-new');
+  const cellUndoBtn = document.getElementById('cell-undo');
+
   const DIFFS = ['سهل', 'متوسط', 'صعب'];
   const st = { letter: '', letters: [], letterCounts: null, poolCounts: null };
 
@@ -401,6 +421,211 @@
     if (qbrowse) qbrowse.refresh();
   });
 
+  // ---- لعبة الخلية ----
+  // خريطة المقدم: ضغطة تفتح الخلية للجميع، وضغطة مطوّلة تفتح التلوين اليدوي.
+  const TEAM_A = 1;
+  const TEAM_B = 2;
+  const CELL_DIRS = ['أعلى ↕ أسفل', 'يمين ↔ يسار'];
+  let cellMenuIndex = null;
+  let cellTeamsSig = '';
+
+  const cellGrid = (cellMapEl && window.createCellGrid)
+    ? window.createCellGrid({
+      root: cellMapEl,
+      interactive: true,
+      onOpen: (index) => socket.emit('solo:cellOpen', { index }),
+      onMenu: (index) => openCellMenu(index),
+    })
+    : null;
+
+  function cellState() {
+    return (lastSnap && lastSnap.cell) || null;
+  }
+
+  function teamById(id) {
+    return ((lastSnap && lastSnap.teams) || []).find(t => t.id === id) || null;
+  }
+
+  function cellLetterAt(index) {
+    const c = cellState();
+    return (c && index != null && c.letters) ? (c.letters[index] || '') : '';
+  }
+
+  modeRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mode-btn');
+    if (!btn) return;
+    socket.emit('solo:setMode', { mode: btn.dataset.mode });
+  });
+
+  // ---- التلوين اليدوي ----
+  function openCellMenu(index) {
+    cellMenuIndex = index;
+    cellMenuLetter.textContent = cellLetterAt(index) || '—';
+    cellMenuRow.innerHTML = '';
+
+    const teams = (lastSnap && lastSnap.teams) || [];
+    const owner = (cellState() && cellState().owners[index]) ?? null;
+    const choices = [
+      ...teams.slice(0, 2).map(t => ({ label: `لـ${t.name}`, owner: t.id, tint: t.color })),
+      { label: 'احرقها', owner: 'burn' },
+      { label: 'تفريغها', owner: null, ghost: true },
+    ];
+
+    choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-small' + (choice.ghost ? ' btn-ghost' : '');
+      btn.textContent = choice.label;
+      if (choice.tint) {
+        btn.style.background = choice.tint;
+        btn.style.borderColor = choice.tint;
+        btn.style.color = '#07080a';
+      } else if (choice.owner === 'burn') {
+        btn.classList.add('cell-btn-burn');
+      }
+      btn.disabled = owner === choice.owner;
+      btn.addEventListener('click', () => {
+        socket.emit('solo:cellAssign', { index, owner: choice.owner });
+        closeCellMenu();
+      });
+      cellMenuRow.appendChild(btn);
+    });
+
+    cellMenu.hidden = false;
+  }
+
+  function closeCellMenu() {
+    cellMenuIndex = null;
+    cellMenu.hidden = true;
+  }
+
+  cellMenuClose.addEventListener('click', closeCellMenu);
+
+  // ---- أسماء الفريقين وألوانهما ----
+  function saveCellTeams() {
+    const rows = Array.from(cellTeamsEl.querySelectorAll('.cell-team'));
+    const teams = rows.map((row, i) => ({
+      name: row.querySelector('.cell-team-name').value.trim() || `الفريق ${i + 1}`,
+      color: row.dataset.color,
+    }));
+    if (teams.length === 2) socket.emit('solo:setTeams', { teams });
+  }
+
+  function renderCellTeams(teams) {
+    const sig = JSON.stringify(teams.map(t => [t.name, t.color]));
+    const typing = cellTeamsEl.contains(document.activeElement);
+    if (sig === cellTeamsSig || typing) return;
+    cellTeamsSig = sig;
+
+    cellTeamsEl.innerHTML = '';
+    teams.slice(0, 2).forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'cell-team';
+      row.style.setProperty('--tint', t.color);
+      row.dataset.color = t.color;
+
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'cell-swatch';
+      swatch.style.background = t.color;
+      swatch.title = 'غيّر اللون';
+      swatch.addEventListener('click', () => {
+        const pal = (lastSnap && lastSnap.palette) || [];
+        const at = pal.indexOf(row.dataset.color);
+        row.dataset.color = pal[(at + 1) % pal.length] || row.dataset.color;
+        saveCellTeams();
+      });
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'cell-team-name';
+      input.maxLength = 24;
+      input.value = t.name;
+      input.addEventListener('change', saveCellTeams);
+      input.addEventListener('blur', saveCellTeams);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+
+      const dir = document.createElement('span');
+      dir.className = 'cell-team-dir';
+      dir.textContent = CELL_DIRS[i];
+
+      row.append(swatch, input, dir);
+      cellTeamsEl.appendChild(row);
+    });
+  }
+
+  // ---- حكم المقدم على الخلية المفتوحة ----
+  cellCorrectBtn.addEventListener('click', () => socket.emit('solo:cellResolve', { result: 'correct' }));
+  cellOtherBtn.addEventListener('click', () => socket.emit('solo:cellResolve', { result: 'other' }));
+  cellBurnBtn.addEventListener('click', () => socket.emit('solo:cellResolve', { result: 'burn' }));
+  cellKeepBtn.addEventListener('click', () => socket.emit('solo:cellResolve', { result: 'keep' }));
+
+  cellNewBtn.addEventListener('click', () => {
+    if (!confirm('جولة جديدة: حروف جديدة وشبكة فارغة. متأكد؟')) return;
+    closeCellMenu();
+    socket.emit('solo:cellNewRound');
+  });
+  cellUndoBtn.addEventListener('click', () => {
+    closeCellMenu();
+    socket.emit('solo:cellUndo');
+  });
+
+  function renderCellPanel(snap) {
+    const on = snap.mode === 'cell';
+    modeRow.querySelectorAll('.mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === snap.mode);
+    });
+    cellPanel.hidden = !on;
+    if (!on) { closeCellMenu(); return; }
+    if (!cellGrid) return;
+
+    const cell = snap.cell || {};
+    const teams = snap.teams || [];
+    cellGrid.render(cell, teams);
+    renderCellTeams(teams);
+
+    const winTeam = cell.win ? teamById(cell.win.team) : null;
+    cellWinBanner.hidden = !cell.win;
+    if (cell.win) {
+      cellWinBanner.textContent = winTeam
+        ? `🏆 ${winTeam.name} وصل الحافتين — انتهت اللعبة`
+        : '🏆 اكتمل خط الفوز — انتهت اللعبة';
+      cellWinBanner.style.setProperty('--tint', winTeam ? winTeam.color : '#22c55e');
+    }
+
+    const openLetter = cell.open != null ? cellLetterAt(cell.open) : '';
+    const w = snap.winner;
+    const showResolve = cell.open != null && !!w && !cell.win;
+    cellResolve.hidden = !showResolve;
+    if (showResolve) {
+      const winnerTeam = w.teamId != null ? teamById(w.teamId) : null;
+      const other = winnerTeam ? teams.find(t => t.id !== winnerTeam.id) : null;
+      cellResolveLabel.textContent = winnerTeam
+        ? `الحرف ${openLetter} — أول من ضغط: ${w.name} (${winnerTeam.name})`
+        : `الحرف ${openLetter} — أول من ضغط: ${w.name}`;
+      cellCorrectBtn.textContent = winnerTeam ? `✓ صحيحة — ${winnerTeam.name}` : '✓ إجابة صحيحة';
+      cellCorrectBtn.disabled = !winnerTeam;
+      cellOtherBtn.textContent = other ? `أعطها ${other.name}` : 'أعطها للفريق الآخر';
+      cellOtherBtn.disabled = !other;
+    }
+
+    if (cell.win) {
+      cellStatus.textContent = winTeam ? `فاز ${winTeam.name}` : 'انتهت اللعبة';
+      cellStatus.dataset.tone = 'win';
+    } else if (cell.open != null) {
+      cellStatus.textContent = w
+        ? `الحرف ${openLetter} — احكم على الإجابة`
+        : `الحرف ${openLetter} مفتوح — افتح الزر`;
+      cellStatus.dataset.tone = 'open';
+    } else {
+      cellStatus.textContent = 'اضغط خلية لفتحها';
+      cellStatus.dataset.tone = '';
+    }
+
+    cellUndoBtn.disabled = !cell.canUndo;
+    if (cellMenuIndex != null) cellMenuLetter.textContent = cellLetterAt(cellMenuIndex) || '—';
+  }
+
   clearQBtn.addEventListener('click', () => socket.emit('solo:clearQuestion'));
 
   // One tap awards the round to whoever pressed first — the common case.
@@ -628,6 +853,11 @@
       draftTeams = snap.teams.map(t => ({ name: t.name, color: t.color }));
       renderTeamRows();
     }
+    // طور الخلية يثبّت الغرفة على فريقين، فمحرر الفرق العام يُقفل حتى لا
+    // يكسر القاعدة من الخلف.
+    teamsEnabled.disabled = snap.mode === 'cell';
+    teamsEnabled.title = snap.mode === 'cell' ? 'طور الخلية يحتاج فريقين بالضبط' : '';
+    renderCellPanel(snap);
     renderPlayers();
   });
 

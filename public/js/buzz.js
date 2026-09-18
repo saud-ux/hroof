@@ -24,6 +24,11 @@
   const micLevel = document.getElementById('mic-level');
   const timerDisplay = document.getElementById('timer-display');
   const miniScores = document.getElementById('mini-scores');
+  const cellBoard = document.getElementById('cell-board');
+  const cellGridEl = document.getElementById('cell-grid');
+  const cellBoardOpen = document.getElementById('cell-board-open');
+  const cellBoardLetter = document.getElementById('cell-board-letter');
+  const cellBoardWin = document.getElementById('cell-board-win');
 
   const STORE_KEY = 'solo-buzz-name';
   const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -99,6 +104,35 @@
   function myScoreKey() {
     if (!me.id) return null;
     return me.teamId != null ? `t:${me.teamId}` : `n:${me.name}`;
+  }
+
+  // ---- لعبة الخلية: نفس لوحة المقدم، عرضًا فقط فوق الزر ----
+  const cellGrid = (cellGridEl && window.createCellGrid)
+    ? window.createCellGrid({ root: cellGridEl, interactive: false })
+    : null;
+
+  function renderCellBoard() {
+    const cell = last.cell;
+    const on = last.mode === 'cell' && !!cell && !!cellGrid;
+    cellBoard.hidden = !on;
+    // The buzzer keeps a floor of screen height while the board is up.
+    buzzView.classList.toggle('with-cell', on);
+    if (!on) return;
+
+    cellGrid.render(cell, last.teams || []);
+
+    const letter = cell.open != null ? (cell.letters[cell.open] || '') : '';
+    cellBoardOpen.hidden = !letter || !!cell.win;
+    if (letter) cellBoardLetter.textContent = letter;
+
+    if (cell.win) {
+      const t = (last.teams || []).find(x => x.id === cell.win.team);
+      cellBoardWin.hidden = false;
+      cellBoardWin.textContent = t ? `🏆 فاز ${t.name}` : '🏆 انتهت اللعبة';
+      cellBoardWin.style.setProperty('--tint', t ? t.color : '#22c55e');
+    } else {
+      cellBoardWin.hidden = true;
+    }
   }
 
   function setButtonColor(color) {
@@ -207,6 +241,7 @@
   });
 
   function render() {
+    renderCellBoard();
     if (!me.id) {
       lobbyCount.textContent = last.players.length
         ? `في الغرفة الآن: ${toArabic(last.players.length)}`

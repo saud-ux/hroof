@@ -8,6 +8,7 @@
   <title>الزر — شاشة المقدم</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/host.css" />
+  <link rel="stylesheet" href="/css/cell.css" />
 </head>
 <body class="presenter solo-host">
   <header class="topbar">
@@ -23,6 +24,14 @@
   <main class="solo-host-main">
     <!-- Right column (RTL): where each round starts -->
     <aside class="solo-side">
+      <div class="card solo-mode" id="mode-card">
+        <p class="card-label">الطور</p>
+        <div class="mode-row" id="mode-row">
+          <button class="mode-btn active" type="button" data-mode="buzz">الزر فقط</button>
+          <button class="mode-btn" type="button" data-mode="cell">خلية الحروف</button>
+        </div>
+      </div>
+
       <div class="card solo-qpick" id="qpick">
         <p class="card-label">اختر سؤالًا</p>
         <p class="letter-caption">الحرف الذي تبدأ به الإجابة</p>
@@ -52,6 +61,48 @@
 
     <!-- Middle: the round itself -->
     <section class="solo-stage">
+      <!-- لعبة الخلية: خريطة المقدم. ضغطة تفتح الخلية للجميع، وضغطة مطوّلة
+           تفتح التلوين اليدوي. تظهر فقط في طور الخلية. -->
+      <section class="card cell-panel" id="cell-panel" hidden>
+        <div class="cell-head">
+          <p class="card-label">خلية الحروف</p>
+          <span class="cell-status" id="cell-status">اضغط خلية لفتحها</span>
+        </div>
+
+        <div class="cell-teams" id="cell-teams"></div>
+
+        <p class="cell-win-banner" id="cell-win-banner" hidden></p>
+
+        <div class="cell-map" id="cell-map"></div>
+
+        <div class="cell-menu" id="cell-menu" hidden>
+          <div class="cell-menu-head">
+            <span class="cell-menu-title">تلوين يدوي: <b id="cell-menu-letter">—</b></span>
+            <button class="cell-menu-close" id="cell-menu-close" type="button" aria-label="إغلاق">×</button>
+          </div>
+          <div class="cell-menu-row" id="cell-menu-row"></div>
+        </div>
+
+        <div class="cell-resolve" id="cell-resolve" hidden>
+          <p class="cell-resolve-label" id="cell-resolve-label">نتيجة السؤال</p>
+          <div class="cell-resolve-row">
+            <button class="btn btn-small cell-btn-correct" id="cell-correct" type="button">✓ إجابة صحيحة</button>
+          </div>
+          <p class="cell-resolve-label">إذا كانت خاطئة:</p>
+          <div class="cell-resolve-row">
+            <button class="btn btn-small" id="cell-other" type="button">أعطها للفريق الآخر</button>
+            <button class="btn btn-small cell-btn-burn" id="cell-burn" type="button">احرقها</button>
+            <button class="btn btn-ghost btn-small" id="cell-keep" type="button">أبقها مفتوحة</button>
+          </div>
+        </div>
+
+        <div class="cell-actions">
+          <button class="btn btn-ghost btn-small" id="cell-new" type="button">جولة جديدة</button>
+          <button class="btn btn-ghost btn-small" id="cell-undo" type="button">تراجع</button>
+        </div>
+        <p class="cell-hint">ضغطة على خلية فارغة تفتحها للجميع · ضغطة مطوّلة (أو زر الفأرة الأيمن) للتلوين اليدوي</p>
+      </section>
+
       <!-- Every question the chosen letter still has, answers included: the
            host reads them here and asks the one they want. -->
       <div class="card qbrowse-wrap" id="question-browser"></div>
@@ -162,6 +213,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/voice.js"></script>
   <script src="/js/question-browser.js"></script>
+  <script src="/js/cell-grid.js"></script>
   <script src="/js/buzz-host.js"></script>
 </body>
 </html>

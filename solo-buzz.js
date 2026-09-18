@@ -6,12 +6,21 @@
 const {
   ARABIC_LETTERS, buildLetterIndex, letterCounts, pickFrom, pageOf, takeById,
 } = require('./questions-index');
+const {
+  ROWS: CELL_ROWS, COLS: CELL_COLS, CELL_COUNT, TEAM_A, TEAM_B, BURNED,
+  isIndex: isCellIndex, isOwner: isCellOwner, rollLetters, emptyOwners, findWin,
+} = require('./cell-game');
 
 const MAX_PLAYERS = 200;
 const MAX_NAME = 24;
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 8;
 const DIFFICULTIES = ['سهل', 'متوسط', 'صعب'];
+
+// The room runs in one of these. 'buzz' is the plain buzzer it always was;
+// 'cell' adds the letter grid on top of it, without changing how pressing works.
+const MODES = ['buzz', 'cell'];
+const CELL_UNDO_DEPTH = 40;
 
 // Each participant picks a colour; their buzzer takes it, the way a team's
 // colour works in the Cell game.
@@ -20,8 +29,22 @@ const PALETTE = [
   '#eab308', '#ec4899', '#14b8a6', '#ef4444',
 ];
 
+// The grid lives in the room, so a phone that reloads — or joins late — gets
+// the board exactly as it stands.
+function newCellState() {
+  return {
+    letters: rollLetters(),   // 25 Arabic letters, no repeats this round
+    owners: emptyOwners(),    // null | 1 | 2 | 'burn' per cell
+    open: null,               // the cell on the table right now
+    win: null,                // { team, path } once a side joins its two edges
+    history: [],              // snapshots for the undo button
+  };
+}
+
 function createRoom() {
   return {
+    mode: 'buzz',     // buzz | cell — the host switches it
+    cell: newCellState(),
     round: 1,
     armed: false,     // presses are accepted
     armedAt: 0,       // ms timestamp the round opened
@@ -146,6 +169,9 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       winner: winner(),
       // players only learn THAT a question is up, never what it says
       hasQuestion: !!room.question,
+      // the grid is public: the host map and every phone draw the same board
+      mode: room.mode,
+      cell: cellPayload(),
     };
     if (!forHost) return base;
     return {
@@ -156,6 +182,87 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       letterCounts: lettersPayload(),
       poolCounts: poolPayload(),
     };
+  }
+
+  // ---- Cell game -----------------------------------------------------------
+  function cellPayload() {
+    const c = room.cell;
+    return {
+      rows: CELL_ROWS,
+      cols: CELL_COLS,
+      letters: c.letters,
+      owners: c.owners,
+      open: c.open,
+      win: c.win,
+      canUndo: c.history.length > 0,
+    };
+  }
+
+  // Every move the host makes is reversible, so a mis-tap on a live show costs
+  // one button instead of the round.
+  function pushCellHistory() {
+    const c = room.cell;
+    c.history.push({
+      letters: c.letters.slice(),
+      owners: c.owners.slice(),
+      open: c.open,
+      win: c.win,
+    });
+    if (c.history.length > CELL_UNDO_DEPTH) c.history.shift();
+  }
+
+  function recomputeCellWin() {
+    const before = room.cell.win;
+    room.cell.win = findWin(room.cell.owners);
+    // A finished match locks every buzzer; the undo button brings them back.
+    if (room.cell.win && !before) room.armed = false;
+  }
+
+  // The team of whoever pressed first — that is who a correct answer pays.
+  function winnerTeamId() {
+    const w = winner();
+    if (!w) return null;
+    const p = findPlayer(w.id);
+    const teamId = p ? p.teamId : w.teamId;
+    return teamId === TEAM_A || teamId === TEAM_B ? teamId : null;
+  }
+
+  // The cell game is two teams by definition, so switching the mode on hands
+  // the room a pair instead of asking the host to build one first.
+  function defaultCellTeams() {
+    return [
+      { id: 1, name: 'الفريق الأخضر', color: PALETTE[0] },
+      { id: 2, name: 'الفريق البرتقالي', color: PALETTE[2] },
+    ];
+  }
+
+  // Install a roster. Players whose team disappeared go back to the picker
+  // instead of sitting in a team that no longer exists. Used both by the host's
+  // teams editor and by the mode switch, so the two can never drift apart.
+  function applyTeams(clean) {
+    room.teams = clean;
+    const validIds = new Set(clean.map(t => t.id));
+    // A team that no longer exists loses its score; the rest keep theirs.
+    for (const key of Object.keys(room.scores)) {
+      if (!key.startsWith('t:')) continue;
+      if (!validIds.has(Number(key.slice(2)))) delete room.scores[key];
+    }
+    const dropped = [];
+    for (const p of room.players) {
+      if (clean.length && !validIds.has(p.teamId)) dropped.push(p.id);
+      else if (clean.length) {
+        const t = clean.find(x => x.id === p.teamId);
+        if (t) p.color = t.color;
+      }
+    }
+    if (dropped.length) {
+      room.players = room.players.filter(p => !dropped.includes(p.id));
+      room.presses = room.presses.filter(p => !dropped.includes(p.id));
+      for (const id of dropped) {
+        const s = nsp.sockets.get(id);
+        if (s) s.emit('solo:teamsChanged', {});
+      }
+    }
   }
 
   function lettersPayload() {
@@ -398,30 +505,106 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
         socket.emit('solo:teamsRejected', { reason: `تحتاج ${MIN_TEAMS} فرق على الأقل` });
         return;
       }
+      // The grid has two edges per side and nothing to colour a third team with.
+      if (room.mode === 'cell' && clean.length !== 2) {
+        socket.emit('solo:teamsRejected', { reason: 'طور الخلية يحتاج فريقين بالضبط' });
+        return;
+      }
 
-      room.teams = clean;
-      const validIds = new Set(clean.map(t => t.id));
-      // A team that no longer exists loses its score; the rest keep theirs.
-      for (const key of Object.keys(room.scores)) {
-        if (!key.startsWith('t:')) continue;
-        if (!validIds.has(Number(key.slice(2)))) delete room.scores[key];
+      applyTeams(clean);
+      broadcast();
+    });
+
+    // ---- Cell game ----------------------------------------------------------
+    // Switch the room between the plain buzzer and the letter grid. The grid is
+    // a two-team game, so turning it on hands the room a pair if it has none.
+    socket.on('solo:setMode', ({ mode } = {}) => {
+      if (!socket.data.soloHost) return;
+      if (!MODES.includes(mode) || mode === room.mode) return;
+      room.mode = mode;
+      if (mode === 'cell' && room.teams.length !== 2) applyTeams(defaultCellTeams());
+      broadcast();
+    });
+
+    // Put a cell on the table. Tapping the open one closes it again; a cell that
+    // already belongs to someone is changed from the manual menu, not by a tap.
+    socket.on('solo:cellOpen', ({ index } = {}) => {
+      if (!socket.data.soloHost || room.mode !== 'cell') return;
+      if (!isCellIndex(index)) return;
+      if (room.cell.win) return;                       // the match is over
+      if (room.cell.open !== index && room.cell.owners[index] !== null) return;
+      pushCellHistory();
+      room.cell.open = room.cell.open === index ? null : index;
+      broadcast();
+    });
+
+    // The host's manual override: colour, burn or clear any cell at any time.
+    socket.on('solo:cellAssign', ({ index, owner } = {}) => {
+      if (!socket.data.soloHost || room.mode !== 'cell') return;
+      if (!isCellIndex(index) || !isCellOwner(owner ?? null)) return;
+      pushCellHistory();
+      room.cell.owners[index] = owner ?? null;
+      if (room.cell.open === index) room.cell.open = null;
+      recomputeCellWin();
+      broadcast();
+    });
+
+    // What happens to the open cell once the buzz is settled. A correct answer
+    // pays the team that pressed first; a wrong one leaves the choice to the
+    // host: hand it over, burn it, or leave it open for another race.
+    socket.on('solo:cellResolve', ({ result } = {}) => {
+      if (!socket.data.soloHost || room.mode !== 'cell') return;
+      const index = room.cell.open;
+      if (index == null) return;
+      const team = winnerTeamId();
+
+      if (result === 'keep') {
+        // Nothing on the grid moves; the round re-opens so the other side can
+        // try the same cell.
+        room.round += 1;
+        room.presses = [];
+        room.armed = true;
+        room.armedAt = Date.now();
+        broadcast();
+        if (room.voice.mode === 'winner') broadcastVoice();
+        return;
       }
-      const dropped = [];
-      for (const p of room.players) {
-        if (clean.length && !validIds.has(p.teamId)) dropped.push(p.id);
-        else if (clean.length) {
-          const t = clean.find(x => x.id === p.teamId);
-          if (t) p.color = t.color;
-        }
-      }
-      if (dropped.length) {
-        room.players = room.players.filter(p => !dropped.includes(p.id));
-        room.presses = room.presses.filter(p => !dropped.includes(p.id));
-        for (const id of dropped) {
-          const s = nsp.sockets.get(id);
-          if (s) s.emit('solo:teamsChanged', {});
-        }
-      }
+
+      let owner;
+      if (result === 'correct') owner = team;
+      else if (result === 'other') owner = team === TEAM_A ? TEAM_B : (team === TEAM_B ? TEAM_A : null);
+      else if (result === 'burn') owner = BURNED;
+      if (owner == null) return;                       // no winner to pay yet
+
+      pushCellHistory();
+      room.cell.owners[index] = owner;
+      room.cell.open = null;
+      recomputeCellWin();
+      room.armed = false;
+      broadcast();
+      if (room.voice.mode === 'winner') broadcastVoice();
+    });
+
+    // A fresh board: new letters, empty grid, no winner.
+    socket.on('solo:cellNewRound', () => {
+      if (!socket.data.soloHost || room.mode !== 'cell') return;
+      pushCellHistory();
+      const c = room.cell;
+      c.letters = rollLetters();
+      c.owners = emptyOwners();
+      c.open = null;
+      c.win = null;
+      broadcast();
+    });
+
+    socket.on('solo:cellUndo', () => {
+      if (!socket.data.soloHost || room.mode !== 'cell') return;
+      const prev = room.cell.history.pop();
+      if (!prev) return;
+      room.cell.letters = prev.letters;
+      room.cell.owners = prev.owners;
+      room.cell.open = prev.open;
+      room.cell.win = prev.win;
       broadcast();
     });
 
@@ -473,6 +656,9 @@ function attachSoloBuzzer(io, questions = [], byDifficulty = {}) {
       room.question = null;
       room.usedIds = new Set();
       room.teams = [];
+      // A new session starts on the plain buzzer with an empty board.
+      room.mode = 'buzz';
+      room.cell = newCellState();
       // Clearing the room means clearing everything: an open-mic mode left over
       // from an earlier session must not carry into the next one.
       room.voice.mode = 'winner';
