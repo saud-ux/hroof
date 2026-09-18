@@ -193,6 +193,23 @@
         <p class="empty-hint" id="players-empty">لم ينضم أحد بعد — وزّع الرابط</p>
       </div>
 
+      <div class="teams-setup card">
+        <div class="teams-head">
+          <span class="card-label">الفرق</span>
+          <label class="teams-toggle">
+            <input type="checkbox" id="teams-enabled" /> فريق ضد فريق
+          </label>
+        </div>
+        <div id="teams-editor" hidden>
+          <div id="teams-rows" class="teams-rows"></div>
+          <div class="teams-actions">
+            <button id="add-team" class="btn btn-small" type="button" data-icon="plus">فريق</button>
+            <button id="save-teams" class="btn btn-primary btn-small" type="button">حفظ الفرق</button>
+          </div>
+          <p class="solo-error" id="teams-error" hidden></p>
+        </div>
+      </div>
+
       <div class="voice-panel card">
         <div class="voice-head">
           <p class="card-label">الصوت</p>
@@ -216,23 +233,6 @@
             <option value="host">المقدم فقط</option>
           </select>
         </label>
-      </div>
-
-      <div class="teams-setup card">
-        <div class="teams-head">
-          <span class="card-label">الفرق</span>
-          <label class="teams-toggle">
-            <input type="checkbox" id="teams-enabled" /> فريق ضد فريق
-          </label>
-        </div>
-        <div id="teams-editor" hidden>
-          <div id="teams-rows" class="teams-rows"></div>
-          <div class="teams-actions">
-            <button id="add-team" class="btn btn-small" type="button" data-icon="plus">فريق</button>
-            <button id="save-teams" class="btn btn-primary btn-small" type="button">حفظ الفرق</button>
-          </div>
-          <p class="solo-error" id="teams-error" hidden></p>
-        </div>
       </div>
     </section>
   </main>
