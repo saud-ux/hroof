@@ -199,16 +199,24 @@
   padding: .6rem .75rem .2rem;
   display: flex; flex-direction: column; align-items: center; gap: .4rem;
 }
-/* الشبكة تأخذ ارتفاعًا ثابتًا وتحسب عرضها منه، والزر يحتفظ بنصيبه من الشاشة
-   مهما صغرت: الضغط أهم من اللوحة على الجوال. */
+/* اللوحة تأخذ ارتفاعًا مقيَّدًا وتحسب عرضها منه، والباقي كله للزر: قرص الزر
+   يقيس نفسه من ارتفاع منطقته، فلا نفرض عليه حدًا أدنى قد يطيل الصفحة عن
+   الشاشة — صفحة أطول من الشاشة تنزلق فيختفي أعلاها خلف جزيرة الآيفون. */
 .solo .buzzer-view > .cell-board { flex: none; }
-.solo .buzzer-view.with-cell > .buzzer-main { min-height: 46dvh; }
 .cell-board .cellgrid { display: flex; justify-content: center; max-width: 100%; }
 .cell-board .cellgrid-svg {
-  height: min(32dvh, 15rem);
+  height: min(24dvh, 12rem);
   width: auto;
   max-width: 100%;
 }
+
+/* في سفاري بشريط سفلي يكون الهامش الآمن العلوي صفرًا، فيلامس الشريط العلوي
+   حافة الشاشة وتغطيه الجزيرة. هذا حد أدنى يضمن نزوله تحتها. */
+.solo .buzzer-view.with-cell { padding-top: max(env(safe-area-inset-top), 1.15rem); }
+
+/* وإن ضاقت الشاشة رغم ذلك، يُقتطع أسفل الصفحة لا أعلاها: الشاشة لا تنزلق
+   أبدًا في هذا الطور، فالشريط العلوي يبقى مكانه تحت الجزيرة. */
+.solo .buzzer-view.with-cell { overflow: hidden; }
 .cell-board-open {
   display: flex; align-items: center; gap: .5rem;
   font-size: .85rem; font-weight: 800; color: #cbd2de;
@@ -226,7 +234,7 @@
 
 /* على شاشة قصيرة تصغر اللوحة أكثر حتى يبقى الزر كبيرًا */
 @media (max-height: 44rem) {
-  .cell-board .cellgrid-svg { height: min(24dvh, 10rem); }
+  .cell-board .cellgrid-svg { height: min(22dvh, 9rem); }
   .cell-board { padding-bottom: 0; }
 }
 
