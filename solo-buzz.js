@@ -25,8 +25,8 @@ const CELL_UNDO_DEPTH = 40;
 // Each participant picks a colour; their buzzer takes it, the way a team's
 // colour works in the Cell game.
 const PALETTE = [
-  '#22c55e', '#3b82f6', '#f97316', '#a855f7',
-  '#eab308', '#ec4899', '#14b8a6', '#ef4444',
+  '#22c55e', '#60a5fa', '#fb923c', '#c084fc',
+  '#facc15', '#f472b6', '#2dd4bf', '#f87171',
 ];
 
 // The grid lives in the room, so a phone that reloads — or joins late — gets

@@ -199,7 +199,7 @@
 
   function renderSoundBtn() {
     soundBtn.setAttribute('aria-pressed', String(soundOn));
-    soundBtn.textContent = soundOn ? '🔔 الصوت' : '🔕 صامت';
+    ZIcon.setLabel(soundBtn, soundOn ? 'bell' : 'bell-off', soundOn ? 'الصوت' : 'صامت');
   }
   soundBtn.addEventListener('click', () => {
     soundOn = !soundOn;
@@ -246,7 +246,7 @@
       const swatch = document.createElement('button');
       swatch.type = 'button';
       swatch.className = 'color-swatch';
-      swatch.style.background = t.color;
+      swatch.style.setProperty('--sw', t.color);
       swatch.title = 'غيّر اللون';
       swatch.addEventListener('click', () => {
         const idx = palette.indexOf(t.color);
@@ -256,7 +256,7 @@
       });
 
       const input = document.createElement('input');
-      input.className = 'solo-input team-name-input';
+      input.className = 'team-name-input';
       input.type = 'text';
       input.maxLength = 24;
       input.value = t.name;
@@ -266,7 +266,8 @@
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'solo-kick';
-      del.textContent = '×';
+      del.innerHTML = ZIcon.icon('x');
+      del.setAttribute('aria-label', 'حذف');
       del.title = 'حذف';
       del.addEventListener('click', () => {
         draftTeams.splice(i, 1);
@@ -286,7 +287,7 @@
       if (!draftTeams.length) {
         draftTeams = [
           { name: 'الفريق الأول', color: palette[0] || '#22c55e' },
-          { name: 'الفريق الثاني', color: palette[1] || '#3b82f6' },
+          { name: 'الفريق الثاني', color: palette[1] || '#60a5fa' },
         ];
       }
       renderTeamRows();
@@ -336,7 +337,7 @@
       voiceMode.value = room.mode;
       const open = room.mode === 'open';
       voiceAllBtn.classList.toggle('on', open);
-      voiceAllBtn.textContent = open ? '🔇 أغلق مايك الجميع' : '🎙 افتح المايك للجميع';
+      ZIcon.setLabel(voiceAllBtn, open ? 'mic-off' : 'mic', open ? 'أغلق مايك الجميع' : 'افتح المايك للجميع');
       renderPlayers(); // mic buttons follow who may speak right now
     },
     onLevel: (v, open) => {
@@ -349,13 +350,13 @@
   voiceBtn.addEventListener('click', async () => {
     if (voice.isJoined()) {
       voice.leave();
-      voiceBtn.textContent = '🎙 تشغيل الصوت';
+      ZIcon.setLabel(voiceBtn, 'mic', 'تشغيل الصوت');
       return;
     }
     voiceBtn.disabled = true;
     const ok = await voice.join(socket.id);
     voiceBtn.disabled = false;
-    if (ok) voiceBtn.textContent = '🔇 إيقاف الصوت';
+    if (ok) ZIcon.setLabel(voiceBtn, 'mic-off', 'إيقاف الصوت');
   });
 
   voiceMode.addEventListener('change', () => {
@@ -373,7 +374,7 @@
     voiceOffHint.hidden = on;
     [voiceBtn, voiceAllBtn, voiceMode].forEach(el => { el.disabled = !on; });
     if (!on) {
-      voiceBtn.textContent = '🎙 تشغيل الصوت';
+      ZIcon.setLabel(voiceBtn, 'mic', 'تشغيل الصوت');
       micMeter.hidden = true;
       voiceStatus.textContent = '';
     }
@@ -556,9 +557,8 @@
       btn.className = 'btn btn-small' + (choice.ghost ? ' btn-ghost' : '');
       btn.textContent = choice.label;
       if (choice.tint) {
-        btn.style.background = choice.tint;
-        btn.style.borderColor = choice.tint;
-        btn.style.color = '#07080a';
+        btn.classList.add('btn-team');
+        btn.style.setProperty('--team', choice.tint);
       } else if (choice.owner === 'burn') {
         btn.classList.add('cell-btn-burn');
       }
@@ -607,6 +607,7 @@
       swatch.type = 'button';
       swatch.className = 'cell-swatch';
       swatch.style.background = t.color;
+      swatch.setAttribute('aria-label', 'غيّر اللون');
       swatch.title = 'غيّر اللون';
       swatch.addEventListener('click', () => {
         const pal = (lastSnap && lastSnap.palette) || [];
@@ -702,7 +703,7 @@
       cellResolveLabel.innerHTML = `الحرف ${esc(openLetter)} — أول من ضغط: `
         + `<span class="who-person">${esc(w.name)}</span>`
         + (winnerTeam ? teamTag(winnerTeam.name, winnerTeam.color) : '');
-      cellCorrectBtn.textContent = winnerTeam ? `✓ صحيحة — ${winnerTeam.name}` : '✓ إجابة صحيحة';
+      ZIcon.setLabel(cellCorrectBtn, 'check', winnerTeam ? `صحيحة — ${winnerTeam.name}` : 'إجابة صحيحة');
       cellCorrectBtn.disabled = !winnerTeam;
       cellOtherBtn.textContent = other ? `أعطها ${other.name}` : 'أعطها للفريق الآخر';
       cellOtherBtn.disabled = !other;
@@ -790,7 +791,7 @@
     const leaders = rows.filter(r => r.points === top).length;
     rows.forEach(row => {
       const li = document.createElement('li');
-      li.style.borderInlineStart = `4px solid ${row.color || 'transparent'}`;
+      if (row.color) li.style.setProperty('--team', row.color);
       // A sole leader is marked; a tie is not a lead.
       if (top > 0 && leaders === 1 && row.points === top) li.classList.add('lead');
       const before = prevPoints.get(row.key);
@@ -817,7 +818,9 @@
       plus.title = 'إضافة نقطة';
       plus.addEventListener('click', () => socket.emit('solo:award', { key: row.key, delta: 1 }));
 
-      li.append(minus, name, pts, plus);
+      const sw = document.createElement('span');
+      sw.className = 'score-swatch';
+      li.append(sw, name, minus, pts, plus);
       scoreList.appendChild(li);
     });
   }
@@ -894,6 +897,7 @@
     if (q) {
       qCategory.textContent = q.category || '—';
       qDifficulty.textContent = q.difficulty || '—';
+      qDifficulty.className = 'chip ' + ({ 'سهل': 'easy', 'متوسط': 'medium', 'صعب': 'hard' }[q.difficulty] || '');
       qText.textContent = q.text;
       qAnswer.textContent = q.answer || '—';
       qHint.textContent = q.hint ? `تلميح: ${q.hint}` : '';
@@ -902,6 +906,7 @@
     const winner = snap.winner;
     winnerBox.classList.toggle('idle', !winner);
     winnerBox.classList.toggle('hit', !!winner);
+    winnerBox.classList.toggle('armed', !winner && !!snap.armed);
     const roomState = winner ? 'hit' : (snap.armed ? 'armed' : 'closed');
     if (stageCard) stageCard.dataset.state = roomState;
     statePill.dataset.state = roomState;
@@ -920,14 +925,13 @@
       winnerName.innerHTML = `<span class="win-person">${esc(winner.name)}</span>`
         + (winner.teamName ? `<span class="win-team">${esc(winner.teamName)}</span>` : '');
       winnerMs.textContent = `${toArabic(winner.ms)} مللي ثانية`;
-      winnerBox.style.background = winner.color || '';
-      winnerBox.style.borderColor = 'transparent';
+      if (winner.color) winnerBox.style.setProperty('--team', winner.color);
+      else winnerBox.style.removeProperty('--team');
     } else {
       winnerName.textContent = snap.armed ? 'الزر مفتوح — بانتظار أول ضغطة' : 'الزر مقفل';
       winnerName.innerHTML = winnerName.textContent;
       winnerMs.textContent = '';
-      winnerBox.style.background = '';
-      winnerBox.style.borderColor = '';
+      winnerBox.style.removeProperty('--team');
     }
 
     armBtn.hidden = !!winner || snap.armed;
@@ -940,7 +944,7 @@
       li.className = i === 0 ? 'first' : '';
       li.innerHTML = `<span class="who">${whoHtml(p)}</span>`
         + `<span class="solo-ms">${toArabic(p.ms)} م.ث</span>`;
-      if (p.color) li.style.borderInlineStart = `4px solid ${p.color}`;
+      if (p.color) li.style.setProperty('--team', p.color);
       pressOrder.appendChild(li);
     });
 
@@ -952,8 +956,8 @@
     // team as a tag rather than gluing it to the word "نقطة".
     if (w) {
       awardLabel.innerHTML = w.teamName
-        ? `✓ نقطة لـ<span class="win-team">${esc(w.teamName)}</span>`
-        : `✓ نقطة لـ${esc(w.name)}`;
+        ? `${ZIcon.icon('check')} نقطة لـ<span class="win-team">${esc(w.teamName)}</span>`
+        : `${ZIcon.icon('check')} نقطة لـ${esc(w.name)}`;
     }
     if (Array.isArray(snap.palette) && snap.palette.length) palette = snap.palette;
     if (Array.isArray(snap.teams) && !editingTeams) {
@@ -990,7 +994,8 @@
         const speaking = voiceRoom.speakers.includes(p.id);
         const mic = document.createElement('button');
         mic.className = 'solo-mic' + (speaking ? ' on' : '');
-        mic.textContent = speaking ? '🎙' : '🔇';
+        mic.innerHTML = ZIcon.icon(speaking ? 'mic' : 'mic-off');
+        mic.setAttribute('aria-label', speaking ? 'اكتم مايكه' : 'افتح مايكه');
         mic.title = speaking ? 'اكتم مايكه' : 'افتح مايكه';
         mic.addEventListener('click', () => socket.emit('voice:setMic', { id: p.id, on: !speaking }));
         li.appendChild(mic);
@@ -998,7 +1003,8 @@
 
       const kick = document.createElement('button');
       kick.className = 'solo-kick';
-      kick.textContent = '×';
+      kick.innerHTML = ZIcon.icon('x');
+      kick.setAttribute('aria-label', 'إخراج');
       kick.title = 'إخراج';
       kick.addEventListener('click', () => socket.emit('solo:kick', { id: p.id }));
       li.appendChild(kick);

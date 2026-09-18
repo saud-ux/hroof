@@ -3,14 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#08090c" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#fffaf0" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#17150f" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="format-detection" content="telephone=no" />
   <title>الزر</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/ui.css" />
+  <link rel="stylesheet" href="/css/zir-base.css" />
   <link rel="stylesheet" href="/css/player.css" />
   <link rel="stylesheet" href="/css/cell.css" />
 </head>
@@ -31,7 +34,7 @@
     <p class="center solo-chosen-team" id="chosen-team" hidden></p>
 
     <form id="name-form" class="solo-form" autocomplete="off">
-      <input id="name-input" class="solo-input" type="text" maxlength="24" placeholder="اسمك" required
+      <input id="name-input" class="z-input solo-input" type="text" maxlength="24" placeholder="اسمك" required
         autocomplete="nickname" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="go" />
 
       <div class="solo-colors" id="color-row" hidden>
@@ -39,7 +42,7 @@
         <div class="color-swatches" id="color-swatches"></div>
       </div>
 
-      <button class="btn btn-primary btn-large" type="submit">دخول</button>
+      <button class="btn btn-primary btn-large btn-block" type="submit">دخول</button>
       <button class="btn btn-ghost btn-small" type="button" id="back-teams" hidden>رجوع لاختيار الفريق</button>
     </form>
     <p class="solo-error" id="name-error" hidden></p>
@@ -64,14 +67,14 @@
 
     <main class="buzzer-main">
       <span id="timer-display" class="timer-display big" hidden>—</span>
-      <button id="buzzer" class="buzzer" aria-label="الزر">
+      <button id="buzzer" class="buzzer waiting" aria-label="الزر">
         <span id="buzzer-label">بانتظار الهوست</span>
       </button>
     </main>
     <footer class="solo-foot">
       <span id="winner-line" class="solo-winner-line"></span>
       <div class="voice-bar" id="voice-bar" hidden>
-        <button id="voice-btn" class="btn btn-ghost btn-small">🎙 انضم للصوت</button>
+        <button id="voice-btn" class="btn btn-small" data-icon="mic">انضم للصوت</button>
         <span id="voice-status" class="voice-status muted"></span>
         <span class="mic-meter" id="mic-meter" hidden><i id="mic-level"></i></span>
       </div>
@@ -79,6 +82,7 @@
   </section>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/icons.js"></script>
   <script src="/js/voice.js"></script>
   <script src="/js/cell-grid.js"></script>
   <script src="/js/buzz.js"></script>

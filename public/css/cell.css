@@ -1,18 +1,14 @@
 /* ==================================================================
-   لعبة الخلية — الشبكة ولوحة التحكم
-   ملف مستقل تحمّله شاشة المقدم وشاشة اللاعب معًا، فلا يمس أنماط الزر.
-   الألوان عالية التباين ومناسبة للبث، والحروف كبيرة تُقرأ من بعيد.
+   لعبة الخلية — الشبكة ولوحة التحكم (/buzz و /buzz/host)
+   على نمط الزر: خلايا بحدود حبرية سميكة، ألوان فرق صريحة، وحركة قليلة.
+   الحالة تُقرأ من التعبئة والحدود، لا من الوميض.
    ================================================================== */
 
 .cellgrid {
-  --cell-empty: #1b1f27;
-  --cell-empty-2: #232833;
-  --cell-line: rgba(255, 255, 255, .16);
-  --cell-line-hi: rgba(255, 255, 255, .55);
-  --cell-burn: #4b5563;
-  --cell-ink: #f4f6fb;
-  --cell-ink-on: #07080a;
-
+  --cell-empty: var(--card);
+  --cell-line: var(--outline);
+  --cell-ink: var(--ink);
+  --cell-burn: #6b6558;
   display: block;
   width: 100%;
 }
@@ -21,7 +17,7 @@
   display: block;
   width: 100%;
   height: auto;
-  font-family: inherit;
+  font-family: var(--font-sans);
   overflow: visible;
   touch-action: manipulation;
 }
@@ -30,8 +26,8 @@
 .cellgrid-svg .hex polygon {
   fill: var(--cell-empty);
   stroke: var(--cell-line);
-  stroke-width: .5;
-  transition: fill .18s ease, stroke .18s ease;
+  stroke-width: .9;
+  stroke-linejoin: round;
 }
 .cellgrid-svg .hex text {
   font-size: 9.2px;
@@ -39,180 +35,104 @@
   fill: var(--cell-ink);
   pointer-events: none;
   user-select: none;
-  transition: fill .18s ease;
 }
 
+/* خلية فريق: لونه، والحرف حبر داكن في الوضعين */
 .cellgrid-svg .hex.is-a polygon,
-.cellgrid-svg .hex.is-b polygon { fill: var(--tint); stroke: rgba(0, 0, 0, .35); }
+.cellgrid-svg .hex.is-b polygon { fill: var(--tint); }
 .cellgrid-svg .hex.is-a text,
-.cellgrid-svg .hex.is-b text { fill: var(--cell-ink-on); }
+.cellgrid-svg .hex.is-b text { fill: #1b1b1b; }
 
-.cellgrid-svg .hex.is-burn polygon { fill: var(--cell-burn); stroke: rgba(0, 0, 0, .3); }
-.cellgrid-svg .hex.is-burn text { fill: rgba(7, 8, 10, .6); }
+/* خلية محروقة: رمادية بحدود متقطعة */
+.cellgrid-svg .hex.is-burn polygon { fill: var(--cell-burn); stroke-dasharray: 1.6 1.2; }
+.cellgrid-svg .hex.is-burn text { fill: rgba(255, 255, 255, .7); }
 
-/* الخلية المفتوحة تومض حتى لا يخطئها أحد. بلا انتقال تدريجي: تظهر في نفس
-   اللحظة التي تصل فيها الرسالة، فلا يبدو البث أبطأ مما هو. */
-.cellgrid-svg .hex.is-open polygon {
-  fill: var(--cell-empty-2);
-  stroke: #fafafa;
-  stroke-width: 1.1;
-  transition: none;
-  animation: cell-pulse 1.05s ease-in-out infinite alternate;
-}
-.cellgrid-svg .hex.is-open text { transition: none; }
-.cellgrid-svg .hex.is-open text { fill: #fff; }
+/* الخلية المفتوحة: أصفر التمييز وحد أسمك — ثابتة بلا وميض */
+.cellgrid-svg .hex.is-open polygon { fill: var(--highlight); stroke-width: 1.8; }
+.cellgrid-svg .hex.is-open text { fill: #1b1b1b; }
 
-@keyframes cell-pulse {
-  from { stroke-opacity: .45; }
-  to   { stroke-opacity: 1; }
-}
-
-/* تلوّن سريع عند أخذ الخلية */
-.cellgrid-svg .hex.just-taken {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: cell-pop .26s cubic-bezier(.2, .8, .2, 1) both;
-}
-@keyframes cell-pop {
-  0%   { transform: scale(.72); opacity: .45; }
-  60%  { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); }
-}
-
-/* خط الفوز */
-.cellgrid-svg .hex.in-win polygon {
-  stroke: #ffffff;
-  stroke-width: 1.2;
-}
-/* الخط أبيض فوق ألوان الفرق نفسها، وتوهجه بلون الفريق: يُقرأ على الأخضر
-   والبرتقالي معًا ولا يذوب في لون الخلية. */
+/* خط الفوز: حبر سميك فوق الخلايا، والخلايا الأخرى تخفت */
+.cellgrid-svg .hex.in-win polygon { stroke-width: 1.8; }
 .cellgrid-svg .cellgrid-winline {
-  stroke-width: 1.6;
+  stroke: var(--outline) !important;
+  filter: none !important;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0;
-  transition: opacity .25s ease;
 }
 .cellgrid-svg .cellgrid-winline.on { opacity: 1; }
-.cellgrid.has-win .cellgrid-svg .hex:not(.in-win) polygon { opacity: .55; }
+.cellgrid.has-win .cellgrid-svg .hex:not(.in-win) polygon { opacity: .45; }
 
 /* أشرطة الحواف: أعلى/أسفل للفريق الأول، يمين/يسار للفريق الثاني */
-.cellgrid-edges rect { opacity: .85; }
+.cellgrid-edges rect { stroke: var(--outline); stroke-width: .5; }
 
 .cellgrid.is-interactive .cellgrid-svg .hex { cursor: pointer; }
-.cellgrid.is-interactive .cellgrid-svg .hex:hover polygon { stroke: var(--cell-line-hi); }
+.cellgrid.is-interactive .cellgrid-svg .hex.is-empty:not(.is-open):hover polygon { fill: var(--card-sunken); }
 .cellgrid.is-interactive.has-win .cellgrid-svg .hex { cursor: default; }
-
-/* ==================================================================
-   الشخص والفريق شيئان مختلفان
-   الاسم يبقى نصًّا عاديًا، والفريق وسم بلونه بجانبه — لا يندمجان في سطر
-   واحد بنفس الخط في أي مكان: صندوق الفائز، ترتيب الضغطات، قائمة
-   المشاركين، شريط الحالة، وسطر الحكم على الخلية.
-   ================================================================== */
-.who { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; min-width: 0; }
-.who-person { font-weight: 800; }
-.team-tag {
-  flex: none;
-  font-size: .72rem; font-weight: 800; line-height: 1.6;
-  padding: .05rem .5rem; border-radius: 999px;
-  color: var(--tint, #22c55e);
-  background: color-mix(in srgb, var(--tint, #22c55e) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tint, #22c55e) 50%, transparent);
-  white-space: nowrap;
-}
-@supports not (color: color-mix(in srgb, red 50%, blue)) {
-  .team-tag { background: transparent; border-color: var(--tint, #22c55e); }
-}
-
-/* صندوق الفائز: الاسم هو العنوان، والفريق تحته وسمًا داكنًا على لون الفريق. */
-.solo-host .solo-winner-box .win-person { display: block; }
-.solo-host .win-team {
-  display: inline-block;
-  margin-top: .3rem;
-  font-size: .8rem; font-weight: 800;
-  padding: .12rem .6rem; border-radius: 999px;
-  background: rgba(0, 0, 0, .28);
-  color: rgba(7, 8, 10, .92);
-}
-/* اسم الفريق في لوحة النقاط يلتف بدل أن يُبتر بثلاث نقاط. */
-.solo-host.cell-mode .score-name {
-  white-space: normal; overflow: visible; text-overflow: clip;
-  font-size: .92rem; line-height: 1.25;
-}
-.solo-host.cell-mode .score-points { min-width: 2rem; font-size: 1.25rem; }
-
-.solo-host .state-pill .pill-team {
-  margin-inline-start: .35rem;
-  font-size: .72rem; font-weight: 700; opacity: .75;
-}
-.solo-host .state-pill .pill-team::before { content: '· '; }
 
 /* ==================================================================
    لوحة المقدم
    ================================================================== */
-/* اختيار اللعبة: بطاقتان واضحتان، وكل لعبة تعرض تحكمها وحده تحتهما. */
-.mode-row { display: flex; gap: .5rem; }
+/* اختيار اللعبة: بطاقتان، والمختارة بلون العلامة */
+.mode-row { display: flex; gap: var(--space-3); }
 .mode-btn {
   flex: 1; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; gap: .1rem;
-  font-family: inherit; font-weight: 800; font-size: .92rem;
-  padding: .7rem .5rem; border-radius: .7rem; cursor: pointer;
-  background: var(--panel-2, #1b1e25); color: var(--ink, #fafafa);
-  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--space-3) var(--space-2);
+  font: 800 15px/1.3 var(--font-sans);
   text-align: center;
+  color: var(--ink); background: var(--card);
+  border: var(--outline-3) solid var(--outline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
 }
-.mode-btn .mode-emoji { font-size: 1.2rem; line-height: 1; }
-.mode-btn .mode-name { font-size: .92rem; }
-.mode-btn .mode-sub { font-size: .68rem; font-weight: 600; opacity: .7; }
-.mode-btn.active {
-  background: var(--good, #22c55e); color: var(--on-accent, #07080a);
-  border-color: var(--good, #22c55e);
-}
-.mode-btn:active:not(.active) { transform: scale(.97); }
+.mode-btn .mode-emoji { font-size: 22px; line-height: 1; display: grid; place-items: center; height: 26px; }
+.mode-btn .mode-sub { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.mode-btn.active { color: var(--on-fill); background: var(--brand); transform: translate(-4px, 4px); box-shadow: 0 0 0 var(--outline); }
+.mode-btn.active .mode-sub { color: var(--on-fill); opacity: .8; }
+.mode-btn:active:not(.active) { transform: translate(-4px, 4px); box-shadow: 0 0 0 var(--outline); }
 
-/* بوابة الصوت عند المقدم */
-.voice-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
-.voice-enable {
-  display: inline-flex; align-items: center; gap: .35rem;
-  font-size: .76rem; font-weight: 700; color: var(--ink-dim, #9da1ac); cursor: pointer;
-  margin-bottom: .7rem;
+/* بوابة الصوت */
+.voice-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.voice-enable { display: inline-flex; align-items: center; gap: 6px; font: 800 13px/1.3 var(--font-sans); color: var(--ink); cursor: pointer; }
+.voice-enable input { accent-color: var(--brand); width: 18px; height: 18px; }
+.voice-off-hint {
+  margin: 0; padding: 8px 12px;
+  font: 700 13px/1.4 var(--font-sans); color: var(--ink-muted);
+  border: var(--outline-2) dashed var(--outline);
+  border-radius: var(--radius-sm);
 }
-.voice-enable input { accent-color: var(--good, #22c55e); width: 1rem; height: 1rem; }
-.voice-off-hint { margin: 0 0 .6rem; font-size: .74rem; color: var(--ink-faint, #858b98); }
 .voice-panel .btn:disabled,
-.voice-panel select:disabled { opacity: .35; cursor: not-allowed; }
+.voice-panel select:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ==================================================================
    تخطيط لعبة الخلية عند المقدم
-   اللوحة في الوسط، وعمود قيادة ثابت بجانبها: الزر والحكم والمؤقت في
-   متناول اليد مهما طالت القائمة تحت اللوحة.
+   اللوحة في الوسط، وعمود قيادة ثابت بجانبها.
    ================================================================== */
 @media (min-width: 62rem) {
   .solo-host.cell-mode .solo-stage {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 17rem;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: var(--space-6);
     align-items: start;
   }
   .solo-host.cell-mode .solo-stage > .cell-panel { grid-column: 1; grid-row: 1; }
   .solo-host.cell-mode .solo-stage > .solo-question { grid-column: 1; grid-row: 2; }
   .solo-host.cell-mode .solo-stage > .stage-card {
     grid-column: 2; grid-row: 1 / span 2;
-    position: sticky; top: 4.5rem;
-    max-height: calc(100vh - 5.5rem);
+    position: sticky; top: 5rem;
+    max-height: calc(100vh - 6rem);
     overflow-y: auto;
     scrollbar-width: thin;
   }
-  /* لم يبقَ في العمودين الجانبيين إلا اختيار اللعبة والرابط والنقاط، فيضيقان
-     ليأخذ الملعب — اللوحة وعمود القيادة — أكبر مساحة ممكنة. واللوحة تستحق
-     شاشة أعرض من سقف صفحة الأسئلة. */
   .solo-host.cell-mode .solo-host-main {
-    grid-template-columns: 12rem minmax(0, 1fr) 16rem;
+    grid-template-columns: 13rem minmax(0, 1fr) 16rem;
     max-width: 104rem;
   }
 }
-
-/* على شاشة أضيق: اللوحة ثم لوحة القيادة مباشرة، والسؤال بعدهما. */
 @media (max-width: 61.99rem) {
   .solo-host.cell-mode .solo-stage { display: flex; flex-direction: column; }
   .solo-host.cell-mode .solo-stage > .cell-panel { order: 1; }
@@ -220,220 +140,204 @@
   .solo-host.cell-mode .solo-stage > .solo-question { order: 3; }
 }
 
-/* صندوق الفائز مقاس لعرض الشاشة كاملة؛ في عمود القيادة الضيق يحتاج مقاسه. */
-.solo-host.cell-mode .solo-winner-box {
-  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
-  min-height: 5.5rem;
-  padding: .85rem .7rem;
-}
-.solo-host.cell-mode .solo-winner-box .solo-ms { font-size: .72rem; font-weight: 700; }
-.solo-host.cell-mode .primary-row .btn { font-size: .95rem; padding: .7rem .8rem; }
-.solo-host.cell-mode .timer-row { flex-direction: column; }
-.solo-host.cell-mode .kbd-legend { font-size: .62rem; }
+/* عمود القيادة الضيق: عناصره لا تنكمش تحت محتواها حين يضيق ارتفاعه */
+.solo-host.cell-mode .stage-card > * { flex-shrink: 0; }
+.solo-host.cell-mode .winner-box .winner-ms { font-size: 14px; padding: 2px 8px; }
+/* اختيار اللعبة في العمود الضيق: زران فوق بعض، الأيقونة بجانب الاسم */
+.solo-host.cell-mode .mode-row { flex-direction: column; }
+.solo-host.cell-mode .mode-btn { flex-direction: row; justify-content: flex-start; gap: var(--space-2); text-align: start; }
+.solo-host.cell-mode .mode-btn .mode-sub { display: none; }
+.solo-host.cell-mode .solo-link-row { flex-direction: column; align-items: stretch; }
+/* عمود القيادة الضيق */
+.solo-host.cell-mode .winner-box { min-height: 88px; padding: var(--space-3); font-size: clamp(18px, 1.6vw, 26px); flex-direction: column; align-items: flex-start; }
+.solo-host.cell-mode .winner-box.idle,
+.solo-host.cell-mode .winner-box.armed { align-items: center; text-align: center; font-size: 15px; }
+.solo-host.cell-mode .primary-row .btn { font-size: 15px; padding: 10px 12px; min-height: 52px; }
+.solo-host.cell-mode .timer-row { flex-direction: column; align-items: stretch; }
+.solo-host.cell-mode .kbd-legend { font-size: 12px; }
+.solo-host.cell-mode .press-order { max-height: 11rem; overflow-y: auto; }
+.solo-host.cell-mode .score-name { white-space: normal; overflow: visible; text-overflow: clip; font-size: 15px; line-height: 1.25; }
 
-/* أزرار الحكم وقد انتقلت إلى عمود القيادة تحت اسم أول من ضغط */
-.solo-host .cell-resolve.in-desk {
-  margin: .8rem 0 0;
-  background: transparent;
-  border-color: var(--stroke-hi, rgba(255, 255, 255, .16));
+.cell-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.cell-head .card-label { margin: 0; }
+.cell-status {
+  padding: 3px 10px;
+  font: 800 13px/1.4 var(--font-sans);
+  color: var(--ink); background: var(--card-sunken);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-pill);
 }
-.solo-host.cell-mode .solo-order { max-height: 11rem; overflow-y: auto; }
+.cell-status[data-tone="open"] { background: var(--highlight); color: var(--on-fill); }
+.cell-status[data-tone="win"] { background: var(--brand); color: var(--on-fill); }
 
-.cell-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: .75rem; flex-wrap: wrap;
-}
-.cell-status { font-size: .82rem; color: var(--ink-dim, #9da1ac); font-weight: 700; }
-.cell-status[data-tone="win"] { color: var(--good, #22c55e); }
-.cell-status[data-tone="open"] { color: #fafafa; }
-
-.cell-teams {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: .5rem; margin: .7rem 0;
-}
+.cell-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-3); margin: var(--space-4) 0; }
 .cell-team {
-  display: flex; align-items: center; gap: .45rem;
-  background: var(--panel-2, #1b1e25);
-  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
-  border-inline-start: 4px solid var(--tint, #22c55e);
-  border-radius: .6rem; padding: .45rem .55rem;
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--card);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-md);
 }
 .cell-team .cell-team-name {
   flex: 1; min-width: 0;
-  font-family: inherit; font-size: .88rem; font-weight: 800;
-  background: none; border: none; color: var(--ink, #fafafa);
-  padding: .15rem 0;
+  padding: 2px 0;
+  font: 800 15px/1.3 var(--font-sans);
+  color: var(--ink); background: none; border: none;
+  border-bottom: 2px dashed transparent;
 }
-.cell-team .cell-team-name:focus { outline: none; border-bottom: 1px solid var(--stroke-hi, rgba(255,255,255,.3)); }
-.cell-team .cell-team-dir { font-size: .68rem; color: var(--ink-faint, #858b98); font-weight: 700; }
+.cell-team .cell-team-name:focus { outline: none; border-bottom-color: var(--outline); }
+.cell-team .cell-team-dir { font: 700 12px/1.3 var(--font-sans); color: var(--ink-muted); }
 .cell-swatch {
-  width: 1.15rem; height: 1.15rem; border-radius: .35rem; flex: none;
-  border: 1px solid rgba(255, 255, 255, .25); cursor: pointer; padding: 0;
+  width: 26px; height: 26px; flex: none;
+  padding: 0;
+  border: var(--outline-2) solid var(--outline);
+  border-radius: 50%;
+  cursor: pointer;
 }
 
-.cell-map { margin: .2rem 0 .6rem; }
-/* على شاشة عريضة جدًا تكبر اللوحة بلا حدود وتدفع كل شيء تحت الطية، فيُحدّها
-   ارتفاع الشاشة لا عرض العمود. */
-.solo-host .cell-map .cellgrid-svg {
-  height: min(56vh, 40rem);
-  width: auto;
-  max-width: 100%;
-  margin-inline: auto;
-}
+.cell-map { margin: var(--space-2) 0 var(--space-4); }
+.solo-host .cell-map .cellgrid-svg { height: min(56vh, 40rem); width: auto; max-width: 100%; margin-inline: auto; }
 
 /* بنك الأسئلة داخل لوحة الخلية */
-.cell-ask { margin-bottom: .6rem; }
-.cell-ask-btn {
-  width: 100%;
-  background: var(--panel-2, #1b1e25); color: var(--ink, #fafafa);
-  border: 1px solid var(--stroke-hi, rgba(255, 255, 255, .16));
-  border-radius: var(--r-md, .7rem);
-  font-weight: 800;
-}
-.cell-ask-btn::after { content: ' ▾'; opacity: .6; }
+.cell-ask { margin-bottom: var(--space-4); }
+.cell-ask-btn { width: 100%; }
+.cell-ask-btn::after { content: ' ▾'; }
 .cell-ask-btn.open::after { content: ' ▴'; }
 .cell-ask-slot {
-  margin-top: .5rem;
-  border: 1px solid var(--stroke, rgba(255, 255, 255, .08));
-  border-radius: var(--r-md, .7rem);
-  padding: .6rem;
-  background: rgba(0, 0, 0, .18);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--card-sunken);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-md);
 }
 .cell-ask-slot .qbrowse-list { max-height: min(38vh, 24rem); }
 
+/* الحكم على السؤال */
 .cell-resolve {
-  display: flex; flex-direction: column; gap: .45rem;
-  background: var(--panel-2, #1b1e25);
-  border: 1px solid var(--good-edge, rgba(34, 197, 94, .32));
-  border-radius: .7rem; padding: .6rem; margin-bottom: .6rem;
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--card-sunken);
+  border: var(--outline-2) dashed var(--outline);
+  border-radius: var(--radius-md);
 }
-.cell-resolve-label { margin: 0; font-size: .74rem; color: var(--ink-faint, #858b98); font-weight: 800; letter-spacing: .06em; }
-.cell-resolve-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.solo-host .cell-resolve.in-desk { margin: 0; }
+.cell-resolve-label { margin: 0; font: 800 13px/1.4 var(--font-sans); color: var(--ink-muted); }
+.cell-resolve-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .cell-resolve-row .btn { flex: 1; min-width: 7rem; }
-.cell-btn-correct { background: var(--good, #22c55e); color: var(--on-accent, #07080a); border-color: var(--good, #22c55e); }
-.cell-btn-burn { background: var(--cell-burn, #4b5563); color: #fff; border-color: transparent; }
+.cell-btn-correct { --btn-fill: var(--brand); --btn-ink: var(--on-fill); }
+.cell-btn-burn { --btn-fill: #6b6558; --btn-ink: #ffffff; }
 
+/* التلوين اليدوي */
 .cell-menu {
-  background: var(--panel-2, #1b1e25);
-  border: 1px solid var(--stroke-hi, rgba(255, 255, 255, .16));
-  border-radius: .7rem; padding: .6rem; margin-bottom: .6rem;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--card);
+  border: var(--outline-3) solid var(--outline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
-.cell-menu-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: .5rem; margin-bottom: .45rem;
+.cell-menu-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
+.cell-menu-title { font: 800 15px/1.3 var(--font-sans); }
+.cell-menu-title b {
+  display: inline-grid; place-items: center;
+  min-width: 30px; height: 30px; margin-inline-start: 4px;
+  font-size: 18px;
+  color: var(--on-fill); background: var(--highlight);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
 }
-.cell-menu-title { font-size: .85rem; font-weight: 800; }
-.cell-menu-title b { font-size: 1.15rem; }
-.cell-menu-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.cell-menu-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .cell-menu-row .btn { flex: 1; min-width: 6rem; }
 .cell-menu-close {
-  background: none; border: none; color: var(--ink-dim, #9da1ac);
-  font-size: 1.1rem; font-weight: 900; cursor: pointer; font-family: inherit;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  font-size: 16px;
+  color: var(--ink); background: transparent;
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
-.cell-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .cell-actions .btn { flex: 1; min-width: 7rem; }
-.cell-hint { margin: .55rem 0 0; font-size: .74rem; color: var(--ink-faint, #858b98); }
+.cell-hint { margin: var(--space-3) 0 0; font: 700 13px/1.5 var(--font-sans); color: var(--ink-muted); }
 
 .cell-win-banner {
-  margin: 0 0 .6rem; padding: .6rem .75rem; border-radius: .7rem;
-  background: var(--tint, #22c55e); color: #07080a;
-  font-weight: 900; text-align: center;
-  animation: cell-pop .3s cubic-bezier(.2, .8, .2, 1) both;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  font: 900 19px/1.3 var(--font-sans);
+  text-align: center;
+  color: #1b1b1b; background: var(--tint, var(--brand));
+  border: var(--outline-3) solid var(--outline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
 
 /* ==================================================================
    جوال اللاعب: الشبكة فوق الزر
    ================================================================== */
 .cell-board {
-  padding: .6rem .75rem .2rem;
-  display: flex; flex-direction: column; align-items: center; gap: .4rem;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) 0 0;
 }
-/* اللوحة تأخذ ارتفاعًا مقيَّدًا وتحسب عرضها منه، والباقي كله للزر: قرص الزر
-   يقيس نفسه من ارتفاع منطقته، فلا نفرض عليه حدًا أدنى قد يطيل الصفحة عن
-   الشاشة — صفحة أطول من الشاشة تنزلق فيختفي أعلاها خلف جزيرة الآيفون. */
-.solo .buzzer-view > .cell-board { flex: none; }
+.solo .buzzer-view > .cell-board { flex: none; width: 100%; }
 .cell-board .cellgrid { display: flex; justify-content: center; max-width: 100%; }
-.cell-board .cellgrid-svg {
-  height: min(33dvh, 16.5rem);
-  width: auto;
-  max-width: 100%;
-}
+.cell-board .cellgrid-svg { height: min(33dvh, 16.5rem); width: auto; max-width: 100%; }
 
-/* في طور الخلية اللوحة هي البطل: القرص يصغر ليفسح لها، ويبقى هدفًا مريحًا
-   للإبهام — ومنطقة الزر كلها قابلة للضغط لا القرص وحده. */
-.solo .buzzer-view.with-cell .buzzer {
-  width: min(56vw, 30dvh);
-  height: min(56vw, 30dvh);
-}
+/* في طور الخلية اللوحة هي البطل: القرص يصغر ليفسح لها */
+.solo .buzzer-view.with-cell .buzzer { width: min(56vw, 30dvh); }
 @supports (container-type: size) {
   .solo .buzzer-view.with-cell .buzzer {
     --disc: min(68cqi, calc(100cqb - var(--timer-h) - 1.5rem), 15rem);
     width: var(--disc);
-    height: var(--disc);
+    font-size: clamp(24px, calc(var(--disc) * .2), 48px);
   }
 }
-
-/* في سفاري بشريط سفلي يكون الهامش الآمن العلوي صفرًا، فتبدأ الصفحة من حافة
-   الشاشة وتغطي الجزيرة أولها. الجزيرة تنتهي عند ٥٠pt تقريبًا، وهذا الحد الأدنى
-   مع حشو الشريط نفسه يُنزل الاسم تحتها. */
-.solo .buzzer-view.with-cell { padding-top: max(env(safe-area-inset-top), 2.4rem); }
-
-/* وإن ضاقت الشاشة رغم ذلك، يُقتطع أسفل الصفحة لا أعلاها: الشاشة لا تنزلق
-   أبدًا في هذا الطور، فالشريط العلوي يبقى مكانه تحت الجزيرة. */
-.solo .buzzer-view.with-cell { overflow: hidden; }
-.cell-board-open {
-  display: flex; align-items: center; gap: .5rem;
-  font-size: .85rem; font-weight: 800; color: #cbd2de;
+/* الفوز في طور الخلية: لا تُغمر الشاشة بلون الفريق (كانت خلاياه تذوب فيها)،
+   بل إطار بلونه والقرص نفسه يمتلئ به، واللوحة تبقى على الورق. */
+.solo .buzzer-view.with-cell.win {
+  --outline: inherit; --card: inherit; --ink: inherit; --ink-muted: inherit;
+  --shadow-sm: inherit; --shadow-md: inherit;
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 8px var(--team);
 }
-/* سطر «أول من ضغط» على الجوال: الاسم ثم وسم الفريق، لا سطر واحد مدموج. */
-.solo .solo-winner-line {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: .4rem; flex-wrap: wrap;
+.solo .buzzer-view.with-cell.win .buzzer {
+  --bz-fill: var(--team); --bz-ink: #1b1b1b;
+  border-color: var(--outline);
+  box-shadow: var(--shadow-buzzer);
 }
-
-/* ---- شريط اللاعب: الاسم والفريق شيئان مختلفان ---- */
-.solo .team-banner .me-person { font-weight: 900; }
-.solo .team-banner .me-team {
-  font-size: .78rem; font-weight: 800;
-  padding: .18rem .55rem; border-radius: 999px;
-  background: color-mix(in srgb, var(--tint, #22c55e) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tint, #22c55e) 55%, transparent);
-  color: var(--tint, #22c55e);
-  white-space: nowrap;
-}
-@supports not (color: color-mix(in srgb, red 50%, blue)) {
-  .solo .team-banner .me-team { background: transparent; border-color: var(--tint, #22c55e); }
-}
-.solo .team-banner .me-switch {
-  margin-inline-start: auto;
-  font-family: inherit; font-size: .68rem; font-weight: 700;
-  padding: .2rem .5rem; border-radius: .45rem; cursor: pointer;
-  background: transparent; color: #7c8496;
-  border: 1px solid rgba(255, 255, 255, .12);
+.solo .buzzer-view.with-cell.win .team-banner { background: var(--team); color: var(--on-fill); border-color: var(--outline); }
+.solo .buzzer-view.with-cell.win .team-banner .me-team { background: #ffffff; color: #1b1b1b; }
+.solo .buzzer-view.with-cell.win .solo-winner-line { background: var(--highlight); }
+@supports (container-type: size) {
+  .solo .buzzer-view.with-cell .buzzer:is(.waiting, .locked, .sent),
+  .solo .buzzer-view.with-cell.win .buzzer,
+  .solo .buzzer-view.with-cell.offline .buzzer { font-size: clamp(16px, calc(var(--disc) * .11), 24px); }
 }
 
+/* الجزيرة في الآيفون: الشريط العلوي يبقى تحتها، والصفحة لا تنزلق */
+.solo .buzzer-view.with-cell { padding-top: max(env(safe-area-inset-top), 2.4rem); overflow: hidden; }
+
+.cell-board-open { display: flex; align-items: center; gap: var(--space-2); font: 800 15px/1.3 var(--font-sans); color: var(--ink); }
 .cell-board-open b {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 2rem; height: 2rem; padding: 0 .4rem;
-  border-radius: .55rem; background: #fafafa; color: #07080a;
-  font-size: 1.25rem; font-weight: 900;
+  display: inline-grid; place-items: center;
+  min-width: 34px; height: 34px; padding: 0 6px;
+  font-size: 20px; font-weight: 900;
+  color: #1b1b1b; background: var(--highlight);
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-sm);
 }
 .cell-board-win {
-  font-size: .95rem; font-weight: 900; color: var(--tint, #22c55e);
+  padding: 4px 14px;
+  font: 900 15px/1.4 var(--font-sans);
   text-align: center;
+  color: #1b1b1b; background: var(--tint, var(--brand));
+  border: var(--outline-2) solid var(--outline);
+  border-radius: var(--radius-pill);
 }
 
-/* على شاشة قصيرة تصغر اللوحة أكثر حتى يبقى الزر كبيرًا */
 @media (max-height: 44rem) {
   .cell-board .cellgrid-svg { height: min(28dvh, 11rem); }
-  .cell-board { padding-bottom: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cellgrid-svg .hex.is-open polygon,
-  .cellgrid-svg .hex.just-taken,
-  .cell-win-banner {
-    animation: none;
-  }
 }

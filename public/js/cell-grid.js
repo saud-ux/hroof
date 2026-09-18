@@ -158,7 +158,7 @@
 
     function teamColor(teams, id) {
       const t = (teams || []).find(x => x.id === id);
-      return t ? t.color : (id === TEAM_A ? '#22c55e' : '#f97316');
+      return t ? t.color : (id === TEAM_A ? '#22c55e' : '#fb923c');
     }
 
     function render(state, teams) {
