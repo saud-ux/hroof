@@ -342,7 +342,7 @@
         buzzer.classList.add('locked');
         buzzerLabel.textContent = 'مقفل';
       }
-      winnerLine.innerHTML = `أول من ضغط: <span class="who-person">${esc(winner.name)}</span>`
+      winnerLine.innerHTML = `<span class="winner-who">أول من ضغط: <span class="who-person">${esc(winner.name)}</span></span>`
         + (winner.teamName
           ? `<span class="team-tag" style="--tint:${esc(winner.color) || '#22c55e'}">${esc(winner.teamName)}</span>`
           : '');

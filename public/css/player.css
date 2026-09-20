@@ -111,11 +111,23 @@ html:has(body.solo .buzzer-view:not([hidden])),
 
 /* ---- Footer --------------------------------------------------------- */
 .solo .solo-foot {
+  /* Full width, so the winner pill's max-width has the screen to measure
+     against instead of its own text. */
+  width: 100%;
   display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
   padding: var(--space-3) 0 calc(var(--space-4) + env(safe-area-inset-bottom));
   text-align: center;
 }
+/* The pill fills the moment someone buzzes, so its box has to be the same
+   size before and after: a footer that grows on the press shrinks the centred
+   buzzer area above it and slides the button up under the thumb. It keeps its
+   slot while empty, and stays one line however long the name is — 40px clears
+   a team tag (12px/1.6 text, 2px padding, 2px borders) inside this pill's own
+   10px padding and 4px borders, so both states settle on the same height. */
 .solo .solo-winner-line {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-wrap: nowrap; gap: 6px;
+  min-height: 40px;
   max-width: 100%;
   padding: 5px 14px;
   font: 900 15px/1.4 var(--font-sans);
@@ -123,7 +135,11 @@ html:has(body.solo .buzzer-view:not([hidden])),
   border: var(--outline-2) solid var(--outline);
   border-radius: var(--radius-pill);
 }
-.solo .solo-winner-line:empty { display: none; }
+.solo .solo-winner-line .winner-who {
+  min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.solo .solo-winner-line:empty { visibility: hidden; }
 .solo .buzzer-view.win .solo-winner-line { background: #ffffff; color: #1b1b1b; border-color: #1b1b1b; }
 .solo .voice-bar { display: flex; align-items: center; justify-content: center; gap: var(--space-2); flex-wrap: wrap; }
 .solo .voice-status { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
