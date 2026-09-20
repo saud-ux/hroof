@@ -213,7 +213,9 @@ kbd, .kbd {
 /* ---- Buzzer -------------------------------------------------------
    States are classes the scripts already set: waiting, armed, pressed,
    sent, locked, win (on .buzzer-view). --bz-fill / --bz-ink drive both
-   the round disc and the .z-hex variant. */
+   the round disc and the .z-hex variant. The disc never moves between
+   them — it sits in one place and only its colour, label and border
+   change, so the screen stays still under the thumb. */
 .buzzer {
   --bz-fill: var(--card-sunken);
   --bz-ink: var(--ink-muted);
@@ -232,19 +234,21 @@ kbd, .kbd {
   cursor: pointer;
   touch-action: manipulation;
   -webkit-user-select: none; user-select: none;
-  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+  transition: background-color 80ms ease-out, color 80ms ease-out, box-shadow 80ms ease-out;
 }
 .buzzer #buzzer-label, .buzzer .buzzer-label { font-size: inherit; }
 .buzzer.waiting, .buzzer:disabled {
   font-size: 22px; font-weight: 800;
   border-style: dashed;
-  box-shadow: none; transform: translateY(10px);
+  box-shadow: none;
   cursor: default;
 }
 .buzzer.armed { --bz-fill: var(--team, var(--brand)); --bz-ink: var(--on-fill); }
-.buzzer.armed:active, .buzzer.pressed { transform: translateY(10px); box-shadow: 0 0 0 var(--outline); }
-.buzzer.sent { --bz-fill: var(--team, var(--brand)); --bz-ink: var(--on-fill); font-size: 26px; transform: translateY(10px); box-shadow: 0 0 0 var(--outline); }
-.buzzer.locked { --bz-fill: var(--danger-soft); --bz-ink: var(--on-fill); border-style: solid; font-size: 24px; transform: translateY(10px); box-shadow: 0 0 0 var(--outline); cursor: default; }
+/* A press flattens the disc's lip where it used to drop the disc onto it —
+   the same "pushed in" read, with nothing moving under the thumb. */
+.buzzer.armed:active, .buzzer.pressed { box-shadow: 0 0 0 var(--outline); }
+.buzzer.sent { --bz-fill: var(--team, var(--brand)); --bz-ink: var(--on-fill); font-size: 26px; }
+.buzzer.locked { --bz-fill: var(--danger-soft); --bz-ink: var(--on-fill); border-style: solid; font-size: 24px; cursor: default; }
 
 /* Hexagon buzzer for the Cell game: taller than wide, thick ink lip at the bottom. */
 .buzzer.z-hex { width: min(66vw, 236px); aspect-ratio: 0.866; --hex-edge: 5px 5px 15px 5px; }
@@ -263,7 +267,7 @@ kbd, .kbd {
   --shadow-sm: -2px 2px 0 #1b1b1b; --shadow-md: -4px 4px 0 #1b1b1b;
   background: var(--team, var(--brand)); color: var(--on-fill);
 }
-.buzzer-view.win .buzzer { --bz-fill: #ffffff; --bz-ink: #1b1b1b; --outline: #1b1b1b; font-size: 30px; border-color: #1b1b1b; border-style: solid; box-shadow: 0 10px 0 #1b1b1b; transform: none; }
+.buzzer-view.win .buzzer { --bz-fill: #ffffff; --bz-ink: #1b1b1b; --outline: #1b1b1b; font-size: 30px; border-color: #1b1b1b; border-style: solid; box-shadow: 0 10px 0 #1b1b1b; }
 .buzzer-view.win .team-banner { background: #ffffff; color: #1b1b1b; border-color: #1b1b1b; }
 .buzzer-view.locked-out { background-image: repeating-linear-gradient(-45deg, transparent 0 14px, var(--danger-soft) 14px 16px); }
 .buzzer-view.offline .buzzer { opacity: .45; }
