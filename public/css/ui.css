@@ -237,6 +237,31 @@ kbd, .kbd {
   transition: background-color 80ms ease-out, color 80ms ease-out, box-shadow 80ms ease-out;
 }
 .buzzer #buzzer-label, .buzzer .buzzer-label { font-size: inherit; }
+
+/* The press cue: the disc gives a little under the thumb and throws a ring
+   off its edge. Both are transforms on the disc itself, so the page around
+   it — the board, the winner line, the buzzer's own slot — never moves.
+   .just-pressed is a one-shot class the scripts drop on the way out. */
+.buzzer::after {
+  content: '';
+  position: absolute; inset: calc(var(--outline-4) * -1);
+  border: var(--outline-4) solid var(--bz-fill);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.buzzer.just-pressed { animation: buzz-pop 420ms ease-out; }
+.buzzer.just-pressed::after { animation: buzz-ring 420ms ease-out; }
+@keyframes buzz-pop {
+  0% { transform: none; }
+  22% { transform: scale(.93); }
+  60% { transform: scale(1.02); }
+  100% { transform: none; }
+}
+@keyframes buzz-ring {
+  0% { opacity: .85; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
 .buzzer.waiting, .buzzer:disabled {
   font-size: 22px; font-weight: 800;
   border-style: dashed;
@@ -500,4 +525,5 @@ kbd, .kbd {
 
 @media (prefers-reduced-motion: reduce) {
   .btn, .icon-btn, .team-card, .buzzer, .letter-btn, .diff-pill, .color-swatch { transition: none; }
+  .buzzer.just-pressed, .buzzer.just-pressed::after { animation: none; }
 }

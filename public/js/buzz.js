@@ -404,11 +404,22 @@
     if (ok) ZIcon.setLabel(voiceBtn, 'mic-off', 'خروج من الصوت');
   });
 
+  // The press cue is a one-shot class: taken off again at the end so the next
+  // round can replay it, and re-added after a reflow so a fast second press
+  // restarts the animation instead of being swallowed by the running one.
+  function playPress() {
+    buzzer.classList.remove('just-pressed');
+    void buzzer.offsetWidth;
+    buzzer.classList.add('just-pressed');
+  }
+  buzzer.addEventListener('animationend', () => buzzer.classList.remove('just-pressed'));
+
   const press = (e) => {
     if (e) e.preventDefault();
     if (buzzer.disabled) return;
     buzzer.disabled = true;           // one press per round, however fast the thumbs
     buzzer.classList.add('pressed');
+    playPress();
     buzz(40);
     socket.emit('solo:press');
     // The server answers with a state broadcast; if a dropped packet means it

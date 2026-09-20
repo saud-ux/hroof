@@ -159,10 +159,17 @@
     buzzerLabel.textContent = 'الخصم بز أولاً';
   }
 
+  // Same one-shot press cue as the solo buzzer: off at the end of the run so
+  // the next buzz replays it, re-added after a reflow so it restarts cleanly.
+  buzzer.addEventListener('animationend', () => buzzer.classList.remove('just-pressed'));
+
   const buzzHandler = (e) => {
     if (e) e.preventDefault();
     if (buzzer.disabled) return;
     buzzer.classList.add('pressed');
+    buzzer.classList.remove('just-pressed');
+    void buzzer.offsetWidth;
+    buzzer.classList.add('just-pressed');
     socket.emit('team:buzz');
   };
   buzzer.addEventListener('pointerdown', buzzHandler);
