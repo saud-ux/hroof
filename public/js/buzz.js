@@ -228,7 +228,7 @@
       btn.innerHTML = `
         <span class="team-swatch"></span>
         <span class="team-card-name">${esc(t.name)}</span>
-        <span class="team-card-status">${count ? `${toArabic(count)} لاعب` : 'لا أحد بعد'}</span>
+        ${count ? `<span class="team-card-status">${toArabic(count)} لاعب</span>` : ''}
       `;
       btn.addEventListener('click', () => {
         pickedTeamId = t.id;
