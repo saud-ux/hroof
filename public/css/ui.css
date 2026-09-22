@@ -45,21 +45,6 @@
   z-index: -1;
 }
 
-/* ---- Keycap -------------------------------------------------------- */
-kbd, .kbd {
-  font-family: var(--font-sans);
-  font-size: 12px; font-weight: 800; line-height: 1;
-  min-width: 1.7em;
-  display: inline-grid; place-items: center;
-  padding: 3px 6px 4px;
-  border-radius: 6px;
-  border: 1.5px solid var(--outline);
-  border-bottom-width: 3px;
-  background: var(--card);
-  color: var(--ink);
-  direction: ltr;
-}
-
 /* ---- Button -------------------------------------------------------- */
 .btn {
   --btn-fill: var(--card);
@@ -80,7 +65,6 @@ kbd, .kbd {
 }
 .btn:active:not(:disabled), .btn.is-pressed { transform: translate(-4px, 4px); box-shadow: 0 0 0 var(--outline); }
 .btn:disabled { cursor: not-allowed; box-shadow: none; transform: none; border-style: dashed; color: var(--ink-muted); background: var(--card-sunken); }
-.btn kbd { margin-inline-start: var(--space-1); }
 .btn-primary { --btn-fill: var(--brand); --btn-ink: var(--on-fill); }
 .btn-danger  { --btn-fill: var(--danger); --btn-ink: var(--on-fill); }
 .btn-ghost   { --btn-fill: transparent; box-shadow: none; border-width: var(--outline-2); }
@@ -340,7 +324,6 @@ kbd, .kbd {
 .diff-pill:active:not(:disabled) { transform: translate(-4px, 4px); box-shadow: 0 0 0 var(--outline); }
 .diff-pill:disabled { background: var(--card-sunken); color: var(--ink-muted); border-style: dashed; box-shadow: none; cursor: not-allowed; }
 .diff-pill .diff-count { font-size: 13px; font-weight: 700; opacity: .75; }
-.diff-pill kbd { border-color: #1b1b1b; background: #ffffff; color: #1b1b1b; }
 
 /* ---- Question card ------------------------------------------------- */
 .q-card { display: flex; flex-direction: column; gap: var(--space-3); }

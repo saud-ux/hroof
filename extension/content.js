@@ -1,35 +1,29 @@
-// يُحقن داخل صفحة التحكم فقط. يستقبل الأمر من الخدمة الخلفية ويطلق نفس ضغطة
-// المفتاح التي تنتظرها الصفحة، فيعمل منطق الاختصارات الأصلي في buzz-host.js كما لو
-// أن المستخدم ضغط الزر بنفسه — بدون تكرار لأسماء الأزرار أو منطقها هنا.
+// يُحقن داخل صفحة التحكم فقط. صفحة التحكم لم تعد فيها اختصارات كيبورد مدمجة،
+// فالإضافة تضغط الأزرار مباشرة عند وصول الأمر من الخدمة الخلفية.
 
-const KEY_FOR = {
-  Space: ' ',
-  Escape: 'Escape',
-  Enter: 'Enter',
-  KeyN: 'n',
-  KeyA: 'a',
-  KeyH: 'h',
-  Digit1: '1',
-  Digit2: '2',
-  Digit3: '3',
-  Digit5: '5',
-  Digit0: '0',
+// رمز المفتاح (يرسله background.js) → مُحدِّد الزر المقابل في الصفحة.
+const SELECTOR_FOR = {
+  Space: '#arm-btn',                     // فتح الزر (تجهيز)
+  Escape: '#disarm-btn',                 // قفل (تصفير الجولة)
+  KeyN: '#next-btn',                     // جولة جديدة
+  KeyA: '#award-btn',                    // نقطة للفائز
+  KeyH: '#toggle-answer',                // إظهار/إخفاء الإجابة
+  Digit1: '#diff-row [data-diff="سهل"]',
+  Digit2: '#diff-row [data-diff="متوسط"]',
+  Digit3: '#diff-row [data-diff="صعب"]',
+  Digit5: '.timer-btn[data-seconds="5"]',
+  Digit0: '.timer-btn[data-seconds="10"]',
 };
+
+// نضغط الزر فقط إن كان ظاهرًا ومفعّلًا — نفس شرط الصفحة القديم.
+function clickIfShown(selector) {
+  const el = document.querySelector(selector);
+  if (!el || el.hidden || el.disabled) return;
+  el.click();
+}
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || msg.type !== 'hroof-shortcut') return;
-  const code = msg.code;
-
-  // نطلقها على body لا على document: مُعالِج الصفحة يقرأ e.target.closest(...)،
-  // و body يُرجع null فيمرّ الاختصار، بينما document لا يملك closest.
-  const target = document.body || document.documentElement;
-  if (!target) return;
-
-  const ev = new KeyboardEvent('keydown', {
-    code,
-    key: KEY_FOR[code] || code,
-    bubbles: true,
-    cancelable: true,
-  });
-  target.dispatchEvent(ev);
+  const selector = SELECTOR_FOR[msg.code];
+  if (selector) clickIfShown(selector);
 });

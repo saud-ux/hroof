@@ -831,37 +831,8 @@
       : `انتهت أسئلة الصعوبة ${difficulty}.`, 'warn');
   });
 
-  // ---- Keyboard: run a round without the mouse ----
-  // Physical key codes, so the shortcuts work with an Arabic layout too.
-  const clickIfShown = (btn) => {
-    if (!btn || btn.hidden || btn.disabled) return false;
-    btn.click();
-    return true;
-  };
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-    const t = e.target;
-    if (t.closest('input, textarea, select, [contenteditable="true"]')) return;
-    // Space/Enter on a focused button already click it; don't click twice.
-    if ((e.code === 'Space' || e.code === 'Enter') && t.closest('button, summary')) return;
-
-    let handled = false;
-    switch (e.code) {
-      case 'Space': handled = clickIfShown(armBtn); break;
-      case 'Escape': handled = clickIfShown(disarmBtn); break;
-      case 'KeyN': case 'Enter': handled = clickIfShown(nextBtn); break;
-      case 'KeyA': handled = clickIfShown(awardBtn); break;
-      case 'KeyH': if (!questionBox.hidden) { toggleAnswer(); handled = true; } break;
-      case 'Digit1': case 'Numpad1': handled = clickIfShown(diffRow.querySelector('[data-diff="سهل"]')); break;
-      case 'Digit2': case 'Numpad2': handled = clickIfShown(diffRow.querySelector('[data-diff="متوسط"]')); break;
-      case 'Digit3': case 'Numpad3': handled = clickIfShown(diffRow.querySelector('[data-diff="صعب"]')); break;
-      case 'Digit5': case 'Numpad5': handled = clickIfShown(timerButtons.find(b => b.dataset.seconds === '5')); break;
-      case 'Digit0': case 'Numpad0': handled = clickIfShown(timerButtons.find(b => b.dataset.seconds === '10')); break;
-      default: return;
-    }
-    // Space never scrolls the desk mid-round, even when there is nothing to open.
-    if (handled || e.code === 'Space') e.preventDefault();
-  });
+  // اختصارات الكيبورد المدمجة أُزيلت عمدًا: التحكم عبر الأزرار أو عبر إضافة
+  // المتصفح (extension/) التي تضغط هذه الأزرار مباشرة.
 
   armBtn.addEventListener('click', () => socket.emit('solo:arm'));
   nextBtn.addEventListener('click', () => socket.emit('solo:nextRound'));

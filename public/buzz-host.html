@@ -52,9 +52,9 @@
         </div>
         <p class="letter-caption qbrowse-or">سؤال عشوائي بحسب الصعوبة</p>
         <div class="solo-diff-row" id="diff-row">
-          <button class="diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span><kbd>1</kbd></button>
-          <button class="diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span><kbd>2</kbd></button>
-          <button class="diff-pill hard" data-diff="صعب">صعب <span class="diff-count" data-count="صعب"></span><kbd>3</kbd></button>
+          <button class="diff-pill easy" data-diff="سهل">سهل <span class="diff-count" data-count="سهل"></span></button>
+          <button class="diff-pill medium" data-diff="متوسط">متوسط <span class="diff-count" data-count="متوسط"></span></button>
+          <button class="diff-pill hard" data-diff="صعب">صعب <span class="diff-count" data-count="صعب"></span></button>
         </div>
       </div>
 
@@ -131,7 +131,7 @@
         <div class="q-meta">
           <span class="chip" id="q-category">—</span>
           <span class="chip" id="q-difficulty">—</span>
-          <button class="btn btn-small btn-ghost q-peek" id="toggle-answer" type="button" aria-pressed="false">إخفاء الإجابة <kbd>H</kbd></button>
+          <button class="btn btn-small btn-ghost q-peek" id="toggle-answer" type="button" aria-pressed="false">إخفاء الإجابة</button>
         </div>
         <p class="q-text" id="q-text">—</p>
         <p class="q-answer" id="q-answer-row">الإجابة: <b id="q-answer">—</b></p>
@@ -145,14 +145,14 @@
         </div>
 
         <div class="solo-controls primary-row">
-          <button id="award-btn" class="btn btn-large btn-award" hidden><span id="award-label">نقطة للفائز</span><kbd>A</kbd></button>
-          <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر <kbd>Space</kbd></button>
-          <button id="next-btn" class="btn btn-large" hidden>جولة جديدة <kbd>N</kbd></button>
+          <button id="award-btn" class="btn btn-large btn-award" hidden><span id="award-label">نقطة للفائز</span></button>
+          <button id="arm-btn" class="btn btn-primary btn-large">فتح الزر</button>
+          <button id="next-btn" class="btn btn-large" hidden>جولة جديدة</button>
         </div>
 
         <div class="timer-row">
-          <button class="btn timer-btn" data-seconds="5" data-icon="timer">٥ ثوانٍ <kbd>5</kbd></button>
-          <button class="btn timer-btn" data-seconds="10" data-icon="timer">١٠ ثوانٍ <kbd>0</kbd></button>
+          <button class="btn timer-btn" data-seconds="5" data-icon="timer">٥ ثوانٍ</button>
+          <button class="btn timer-btn" data-seconds="10" data-icon="timer">١٠ ثوانٍ</button>
           <button id="stop-timer" class="btn btn-ghost btn-small" hidden>إيقاف</button>
           <span id="timer-display" class="timer-display" hidden>—</span>
         </div>
@@ -160,20 +160,11 @@
         <ol id="press-order" class="press-order"></ol>
 
         <div class="solo-controls minor-row">
-          <button id="disarm-btn" class="btn btn-ghost btn-small" data-icon="lock">قفل <kbd>Esc</kbd></button>
+          <button id="disarm-btn" class="btn btn-ghost btn-small" data-icon="lock">قفل</button>
           <button id="clear-q-btn" class="btn btn-ghost btn-small" hidden>إخفاء السؤال</button>
           <button id="clear-btn" class="btn btn-danger btn-small">تصفير الغرفة</button>
         </div>
 
-        <p class="kbd-legend">
-          <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> سؤال</span>
-          <span><kbd>Space</kbd> فتح</span>
-          <span><kbd>Esc</kbd> قفل</span>
-          <span><kbd>A</kbd> نقطة</span>
-          <span><kbd>N</kbd> جولة</span>
-          <span><kbd>5</kbd><kbd>0</kbd> مؤقت</span>
-          <span><kbd>H</kbd> الإجابة</span>
-        </p>
       </div>
     </section>
 
