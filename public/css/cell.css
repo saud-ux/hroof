@@ -154,7 +154,6 @@
 .solo-host.cell-mode .winner-box.armed { align-items: center; text-align: center; font-size: 15px; }
 .solo-host.cell-mode .primary-row .btn { font-size: 15px; padding: 10px 12px; min-height: 52px; }
 .solo-host.cell-mode .timer-row { flex-direction: column; align-items: stretch; }
-.solo-host.cell-mode .kbd-legend { font-size: 12px; }
 .solo-host.cell-mode .press-order { max-height: 11rem; overflow-y: auto; }
 .solo-host.cell-mode .score-name { white-space: normal; overflow: visible; text-overflow: clip; font-size: 15px; line-height: 1.25; }
 

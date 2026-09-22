@@ -82,20 +82,9 @@
 .solo-host .solo-controls { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
 .solo-host .primary-row .btn { flex: 1 1 12rem; }
 .solo-host .btn-award { --btn-fill: var(--highlight); --btn-ink: var(--on-fill); }
-.solo-host .btn-award kbd, .solo-host .btn-primary kbd { border-color: #1b1b1b; background: #ffffff; color: #1b1b1b; }
 .solo-host .timer-row { display: flex; gap: var(--space-3); align-items: center; justify-content: center; flex-wrap: wrap; }
 .solo-host .timer-row .timer-display { font-size: 48px; padding: 4px 16px 8px; box-shadow: var(--shadow-sm); }
 .solo-host .minor-row { padding-top: var(--space-4); border-top: var(--outline-2) dashed var(--outline); }
-.solo-host .kbd-legend {
-  margin: 0;
-  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4);
-  font: 700 13px/1.4 var(--font-sans); color: var(--ink-muted);
-}
-.solo-host .kbd-legend span { display: inline-flex; align-items: center; gap: 3px; }
-/* Phones have no keyboard: hide the shortcut hints there. */
-@media (hover: none), (pointer: coarse) {
-  .solo-host kbd, .solo-host .kbd-legend { display: none; }
-}
 
 /* ---- The room: scores, players, voice, teams ---------------------- */
 .solo-host .scoreboard-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
