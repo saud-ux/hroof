@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>اختصارات البَزّر</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: "Tajawal", -apple-system, "Segoe UI", system-ui, sans-serif;
+      width: 300px; margin: 0; padding: 14px;
+      background: #fff; color: #1b1b1f;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1b1b1f; color: #ececf0; }
+    }
+    h1 { font-size: 15px; margin: 0 0 4px; }
+    p { font-size: 12px; margin: 0 0 10px; opacity: 0.8; line-height: 1.6; }
+    #status { font-size: 12px; font-weight: 700; margin: 0 0 10px; }
+    .ok { color: #1a9d55; }
+    .off { color: #c8542a; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    td { padding: 4px 2px; border-bottom: 1px solid rgba(128,128,128,0.2); }
+    td.key {
+      text-align: left; direction: ltr; font-family: ui-monospace, monospace;
+      white-space: nowrap; opacity: 0.85;
+    }
+    button {
+      margin-top: 12px; width: 100%; padding: 8px; border: 0; border-radius: 8px;
+      background: #2f6df6; color: #fff; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    button:hover { background: #2559d0; }
+  </style>
+</head>
+<body>
+  <h1>اختصارات البَزّر</h1>
+  <p>تعمل حتى والمتصفح في الخلفية وأنت داخل لعبة أخرى. افتح صفحة التحكم على مسار <code>/buzz/host</code> في تبويب.</p>
+  <p id="status">…</p>
+  <table>
+    <tbody>
+      <tr><td>تجهيز البَزّر</td><td class="key">Ctrl+Shift+1</td></tr>
+      <tr><td>إلغاء الجولة</td><td class="key">Ctrl+Shift+2</td></tr>
+      <tr><td>الجولة التالية</td><td class="key">Ctrl+Shift+3</td></tr>
+      <tr><td>احتساب نقطة</td><td class="key">Ctrl+Shift+4</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;">بقية الاختصارات (الإجابة، الصعوبة، المؤقّت) بلا مفاتيح افتراضية — تقدر تعيّنها من صفحة الاختصارات.</p>
+  <button id="open-shortcuts">تعديل المفاتيح</button>
+  <script src="popup.js"></script>
+</body>
+</html>

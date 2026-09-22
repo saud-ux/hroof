@@ -1,0 +1,75 @@
+{
+  "manifest_version": 3,
+  "name": "حروف — اختصارات البَزّر",
+  "version": "1.0.0",
+  "description": "اختصارات عامة للتحكم بصفحة تحكم حروف حتى والمتصفح في الخلفية وأنت داخل لعبة أخرى.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "*://*/buzz/host",
+    "*://*/bzhost",
+    "*://*/buzz-host.html"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/buzz/host",
+        "*://*/bzhost",
+        "*://*/buzz-host.html"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "اختصارات البَزّر"
+  },
+  "commands": {
+    "arm": {
+      "suggested_key": { "default": "Ctrl+Shift+1", "mac": "MacCtrl+Shift+1" },
+      "description": "تجهيز البَزّر — يعادل مفتاح المسافة (Space)",
+      "global": true
+    },
+    "disarm": {
+      "suggested_key": { "default": "Ctrl+Shift+2", "mac": "MacCtrl+Shift+2" },
+      "description": "إلغاء/إيقاف الجولة — يعادل مفتاح (Escape)",
+      "global": true
+    },
+    "next": {
+      "suggested_key": { "default": "Ctrl+Shift+3", "mac": "MacCtrl+Shift+3" },
+      "description": "الجولة/السؤال التالي — يعادل مفتاح (N)",
+      "global": true
+    },
+    "award": {
+      "suggested_key": { "default": "Ctrl+Shift+4", "mac": "MacCtrl+Shift+4" },
+      "description": "احتساب نقطة — يعادل مفتاح (A)",
+      "global": true
+    },
+    "toggle-answer": {
+      "description": "إظهار/إخفاء الإجابة — يعادل مفتاح (H)",
+      "global": true
+    },
+    "difficulty-1": {
+      "description": "الصعوبة: سهل — يعادل مفتاح (1)",
+      "global": true
+    },
+    "difficulty-2": {
+      "description": "الصعوبة: متوسط — يعادل مفتاح (2)",
+      "global": true
+    },
+    "difficulty-3": {
+      "description": "الصعوبة: صعب — يعادل مفتاح (3)",
+      "global": true
+    },
+    "timer-5": {
+      "description": "مؤقّت ٥ ثوانٍ — يعادل مفتاح (5)",
+      "global": true
+    },
+    "timer-10": {
+      "description": "مؤقّت ١٠ ثوانٍ — يعادل مفتاح (0)",
+      "global": true
+    }
+  }
+}
