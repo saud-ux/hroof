@@ -27,9 +27,9 @@
     "default_title": "اختصارات البَزّر"
   },
   "commands": {
-    "disarm": {
+    "next": {
       "suggested_key": { "default": "Ctrl+Shift+1", "mac": "MacCtrl+Shift+1" },
-      "description": "تصفير البَزّر — يعادل مفتاح (Escape)  ·  Numpad1",
+      "description": "جولة جديدة — يعادل مفتاح (N)  ·  Numpad1",
       "global": true
     },
     "timer-5": {
@@ -47,8 +47,8 @@
       "description": "تجهيز البَزّر — يعادل مفتاح المسافة (Space)",
       "global": true
     },
-    "next": {
-      "description": "الجولة/السؤال التالي — يعادل مفتاح (N)",
+    "disarm": {
+      "description": "تصفير/إيقاف الجولة — يعادل مفتاح (Escape)",
       "global": true
     },
     "award": {
